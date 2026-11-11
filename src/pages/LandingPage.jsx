@@ -3,7 +3,10 @@ import HearoLogo from '../components/HearoLogo';
 
 export default function LandingPage({ onNavigateToLogin, onNavigateToRegister }) {
   const [activeTab, setActiveTab] = useState('SIBI'); // SIBI / BISINDO
-  const [activeNav, setActiveNav] = useState('Beranda'); // Navigasi Menu Active
+  const [activeNav, setActiveNav] = useState('Beranda');
+  
+  // State untuk Pop-up Modal Karakter
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const numbers = '0123456789'.split('');
@@ -16,19 +19,22 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
     }
   };
 
+  // Fungsi saat tombol huruf / angka diklik
+  const handleCharacterClick = (char) => {
+    setSelectedCharacter(char);
+  };
+
   return (
-    <div className="min-h-screen bg-[#F4F7FC] text-[#102A43] font-sans antialiased">
+    <div className="min-h-screen bg-[#F4F7FC] text-[#102A43] font-sans antialiased relative">
       
       {/* ================= 1. NAVBAR FIXED ================= */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex justify-between items-center">
           
-          {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => handleNavClick('hero', 'Beranda')}>
-            <HearoLogo className="h-10 md:h-12" />
+            <HearoLogo variant="card" />
           </div>
 
-          {/* Menu Kapsul Tengah */}
           <nav className="hidden md:flex items-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
             {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
               <button
@@ -45,7 +51,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             ))}
           </nav>
 
-          {/* Tombol Akses Kanan */}
           <div className="flex items-center gap-2.5">
             <button
               onClick={onNavigateToLogin}
@@ -67,20 +72,19 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </header>
 
       {/* ================= 2. HERO BANNER SECTION ================= */}
-      <section id="hero" className="bg-[#007EDA] text-white py-16 md:py-24 relative overflow-hidden">
-        {/* Background Decorative Circles */}
+      <section id="hero" className="bg-[#007EDA] text-white py-12 md:py-20 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#0067B8]/40 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-[#6DD5FA]/20 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
           
-          {/* Teks Kiri */}
           <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-[11px] font-bold tracking-wide uppercase">
-              <span>🛡️ JEMBATAN KOMUNIKASI TANPA BATAS.</span>
+            <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 text-[11px] font-extrabold tracking-wider text-white">
+              <span className="w-4 h-4 rounded-full border border-white/80 flex items-center justify-center text-[9px]">✓</span>
+              <span>JEMBATAN KOMUNIKASI TANPA BATAS.</span>
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight text-white">
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.2] text-white">
               Belajar Bahasa Indonesia dengan Mudah untuk Teman Tunarungu
             </h1>
 
@@ -91,49 +95,30 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <button
                 onClick={onNavigateToRegister}
-                className="px-7 py-3.5 bg-[#FFC72C] hover:bg-yellow-400 text-[#102A43] font-extrabold rounded-full shadow-lg text-xs md:text-sm transition flex items-center gap-2 cursor-pointer"
+                className="px-7 py-3.5 bg-[#FFC72C] hover:bg-yellow-400 text-[#102A43] font-black rounded-2xl shadow-lg text-xs md:text-sm transition flex items-center gap-2.5 cursor-pointer"
               >
-                <span>▶ Mulai Belajar</span>
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+                <span>Mulai Belajar</span>
               </button>
               
               <button
                 onClick={() => handleNavClick('kamus', 'Kamus')}
-                className="px-7 py-3.5 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold rounded-full border border-white/30 text-xs md:text-sm transition flex items-center gap-2 cursor-pointer"
+                className="px-7 py-3.5 bg-[#0067B8]/70 hover:bg-[#0067B8] backdrop-blur-md text-white font-bold rounded-2xl border border-white/20 text-xs md:text-sm transition flex items-center gap-2.5 cursor-pointer"
               >
-                <span>🤟 Buka Kamus</span>
+                <span className="text-base">🖐</span>
+                <span>Buka Kamus</span>
               </button>
             </div>
           </div>
 
-          {/* Kartu Pratinjau Kanan (Ilustrasi Isyarat) */}
-          <div className="lg:col-span-5">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/30 p-4 md:p-6 rounded-[32px] shadow-2xl text-center">
-              <div className="bg-[#0067B8] p-4 rounded-2xl border border-white/20 text-white">
-                <div className="flex justify-between items-center text-xs font-bold mb-3 border-b border-white/10 pb-2">
-                  <span>🤟 Deteksi Gerakan: Aktif</span>
-                  <span className="bg-[#FFC72C] text-[#102A43] px-2 py-0.5 rounded text-[10px]">LIVE</span>
-                </div>
-                <div className="grid grid-cols-5 gap-2 my-4">
-                  {['A', 'B', 'C', 'D', 'E'].map((letter, idx) => (
-                    <div
-                      key={letter}
-                      className={`p-3 rounded-xl border flex flex-col items-center justify-center font-bold ${
-                        idx === 0
-                          ? 'bg-[#FFC72C] text-[#102A43] border-yellow-300 scale-105 shadow-md'
-                          : 'bg-white/15 border-white/20 text-white'
-                      }`}
-                    >
-                      <span className="text-xl mb-1">✋</span>
-                      <span className="text-xs">{letter}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-white/10 p-2.5 rounded-xl text-xs flex justify-between items-center font-medium">
-                  <span>Karakter Terdeteksi: <strong className="text-yellow-300">Huruf A</strong></span>
-                  <span className="text-emerald-300 font-bold">98% Fit</span>
-                </div>
-              </div>
-            </div>
+          <div className="lg:col-span-5 flex justify-center">
+            <img 
+              src="/src/assets/hero-tablet-mockup.jpeg" 
+              alt="Hearo Tablet Mockup" 
+              className="w-full max-w-lg h-auto drop-shadow-2xl hover:scale-105 transition duration-300 rounded-[28px]"
+            />
           </div>
 
         </div>
@@ -180,11 +165,12 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Abjad A-Z (7 Kolom) */}
+            {/* Abjad A-Z */}
             <div className="lg:col-span-7 grid grid-cols-4 sm:grid-cols-7 gap-3">
               {alphabet.map((item) => (
                 <button
                   key={item}
+                  onClick={() => handleCharacterClick(item)}
                   className="h-12 bg-[#F0F5FA] hover:bg-[#007EDA] hover:text-white text-[#102A43] rounded-2xl font-extrabold text-sm flex items-center justify-center transition border border-slate-100 cursor-pointer shadow-sm hover:scale-105"
                 >
                   {item}
@@ -192,14 +178,14 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               ))}
             </div>
 
-            {/* Garis Pembatas Vertikal */}
             <div className="hidden lg:block w-px bg-slate-200 h-full mx-auto"></div>
 
-            {/* Angka 0-9 (4 Kolom) */}
+            {/* Angka 0-9 */}
             <div className="lg:col-span-4 grid grid-cols-4 gap-3">
               {numbers.map((num) => (
                 <button
                   key={num}
+                  onClick={() => handleCharacterClick(num)}
                   className="h-12 bg-[#F0F5FA] hover:bg-[#007EDA] hover:text-white text-[#102A43] rounded-2xl font-extrabold text-sm flex items-center justify-center transition border border-slate-100 cursor-pointer shadow-sm hover:scale-105"
                 >
                   {num}
@@ -209,6 +195,41 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
           </div>
         </div>
       </section>
+
+     {/* ================= POP-UP MODAL KAMUS ISYARAT FIGMA ================= */}
+      {selectedCharacter && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
+          onClick={() => setSelectedCharacter(null)} // Klik luar modal untuk menutup
+        >
+          <div 
+            className="relative max-w-xs md:max-w-sm w-full animate-scaleUp overflow-hidden rounded-[24px] shadow-2xl border-2 border-white bg-white"
+            onClick={(e) => e.stopPropagation()} // Mencegah modal tertutup saat area dalam diklik
+          >
+            
+            {/* Tombol Close (X) Rapi & Presisi */}
+            <button
+              onClick={() => setSelectedCharacter(null)}
+              className="absolute top-3.5 right-3.5 z-20 w-7 h-7 bg-white/80 hover:bg-white text-slate-700 rounded-full font-extrabold flex items-center justify-center text-xs transition cursor-pointer shadow-md border border-slate-200"
+              title="Tutup"
+            >
+              ✕
+            </button>
+
+            {/* Gambar Kartu Figma */}
+            <img
+              src={`/src/assets/${activeTab.toLowerCase()}/${selectedCharacter.toLowerCase()}.png`}
+              alt={`Kartu Isyarat ${selectedCharacter}`}
+              className="w-full h-auto block object-contain"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = `https://via.placeholder.com/320x440?text=Gambar+${selectedCharacter}+Belum+Tersedia`;
+              }}
+            />
+
+          </div>
+        </div>
+      )}
 
       {/* ================= 4. FITUR UNGGULAN HEARO AI ================= */}
       <section id="fitur" className="py-16 md:py-24 bg-[#EDF4FC]">
@@ -225,10 +246,8 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             Dirancang untuk mempercepat pemahaman gramatikal dan bahasa visual tanpa hambatan komunikasi.
           </p>
 
-          {/* 4 Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
             
-            {/* Card 1 */}
             <div className="bg-white p-7 rounded-[28px] border border-slate-100 shadow-lg flex flex-col justify-between hover:shadow-xl transition">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] text-[#007EDA] rounded-2xl flex items-center justify-center text-xl mb-5">
@@ -244,7 +263,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               </a>
             </div>
 
-            {/* Card 2 */}
             <div className="bg-white p-7 rounded-[28px] border border-slate-100 shadow-lg flex flex-col justify-between hover:shadow-xl transition">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] text-[#007EDA] rounded-2xl flex items-center justify-center text-xl mb-5">
@@ -260,7 +278,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               </a>
             </div>
 
-            {/* Card 3 */}
             <div className="bg-white p-7 rounded-[28px] border border-slate-100 shadow-lg flex flex-col justify-between hover:shadow-xl transition">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] text-[#007EDA] rounded-2xl flex items-center justify-center text-xl mb-5">
@@ -276,7 +293,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               </a>
             </div>
 
-            {/* Card 4 */}
             <div className="bg-white p-7 rounded-[28px] border border-slate-100 shadow-lg flex flex-col justify-between hover:shadow-xl transition">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] text-[#007EDA] rounded-2xl flex items-center justify-center text-xl mb-5">
@@ -299,10 +315,9 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       {/* ================= 5. APLIKASI HEARO MOBILE & PERAN PENGGUNA ================= */}
       <section id="aplikasi" className="py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
         
-        {/* Banner Aplikasi Mobile (Segera Hadir) */}
         <div className="bg-gradient-to-r from-[#EAF3FD] via-[#F4F8FE] to-[#EAF3FD] rounded-[36px] p-8 md:p-12 border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
           <div className="w-36 md:w-44 h-48 bg-[#007EDA] rounded-3xl p-4 text-white shadow-xl flex flex-col justify-between transform -rotate-3 border-2 border-white">
-            <HearoLogo className="h-6" />
+            <HearoLogo className="h-6" variant="transparent" />
             <div className="text-center">
               <span className="text-3xl">📱</span>
               <p className="text-[10px] font-bold mt-2">Hearo Mobile App</p>
@@ -328,7 +343,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
           </div>
         </div>
 
-        {/* Peran Pengguna (Siswa, Guru, Orang Tua) */}
         <div id="tentang" className="text-center">
           <div className="inline-block bg-[#D6E6F7] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-3 tracking-wider">
             PERAN PENGGUNA
@@ -342,7 +356,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             
-            {/* Card Siswa */}
             <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-md flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] rounded-2xl flex items-center justify-center text-xl mb-4">👨‍🎓</div>
@@ -357,7 +370,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               </ul>
             </div>
 
-            {/* Card Guru */}
             <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-md flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] rounded-2xl flex items-center justify-center text-xl mb-4">👨‍🏫</div>
@@ -372,7 +384,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               </ul>
             </div>
 
-            {/* Card Orang Tua */}
             <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-md flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 bg-[#E3F2FD] rounded-2xl flex items-center justify-center text-xl mb-4">👨‍👩‍👧</div>
@@ -440,7 +451,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
           </div>
 
-          {/* Banner Kuning CTA (Mulai Sekarang) */}
           <div className="mt-16 bg-[#FFC72C] text-[#102A43] rounded-[36px] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl text-left">
             <div className="space-y-2">
               <span className="text-[11px] font-black uppercase tracking-wider block">
@@ -470,12 +480,11 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
         <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
           
           <div className="md:col-span-7 space-y-4 text-left">
-            <HearoLogo className="h-10" />
+            <HearoLogo className="inline-flex" variant="card" />
             <p className="text-xs text-slate-300 leading-relaxed max-w-lg font-normal">
               Platform edukasi cerdas & inklusif berbasis kecerdasan artifisial yang memberdayakan teman tunarungu dalam memahami struktur tata bahasa SPOK serta memperdalam kefasihan bahasa isyarat SIBI dan BISINDO secara interaktif.
             </p>
             
-            {/* Social Icons */}
             <div className="flex items-center gap-3 pt-2">
               <span className="text-xs text-slate-400 font-bold mr-2">Ikuti Komunitas:</span>
               <a href="#" className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-sm transition">💬</a>
@@ -500,13 +509,12 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
         </div>
 
-        {/* Bottom Line Copyright */}
         <div className="max-w-7xl mx-auto px-4 md:px-8 mt-10 pt-6 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center text-[11px] text-slate-400 gap-3">
           <div>© 2026 Hearo AI. Hak Cipta Dilindungi Undang-Undang.</div>
           <div className="flex gap-4 font-semibold text-slate-300">
             <span>🏋️ Inklusif & Aksesibel</span>
             <span>•</span>
-            <span>🤟 Bahasa Isyarat Indonesia</span>
+            <span> Bahasa Isyarat Indonesia</span>
           </div>
         </div>
       </footer>

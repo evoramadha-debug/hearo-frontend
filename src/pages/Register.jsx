@@ -13,12 +13,15 @@ export default function Register({
 
   const [formData, setFormData] = useState({
     fullName: '',
+    studentName: '',
+    studentNisn: '',
     nip: '',
     nisn: '',
     kelas: '',
     phone: '',
     email: '',
     password: '',
+    passwordConfirmation: '',
   });
 
   const tabs = [
@@ -52,12 +55,21 @@ export default function Register({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!agreed) return;
+    if (formData.password !== formData.passwordConfirmation) return;
     if (onRegisterSuccess) {
-      onRegisterSuccess({ ...formData, role: selectedRole });
+      const {
+        passwordConfirmation: _passwordConfirmation,
+        ...registrationData
+      } = formData;
+      onRegisterSuccess({ ...registrationData, role: selectedRole });
     } else if (onNavigateToLogin) {
       onNavigateToLogin();
     }
   };
+
+  const passwordsDoNotMatch =
+    formData.passwordConfirmation !== '' &&
+    formData.password !== formData.passwordConfirmation;
 
   return (
     <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-6 md:p-10 font-sans relative overflow-hidden">
@@ -383,7 +395,7 @@ export default function Register({
             </>
           )}
 
-          {/* ---------- FORM KHUSUS ORANG TUA (4 FIELD + BANNER INFO KUNING) ---------- */}
+          {/* ---------- FORM KHUSUS ORANG TUA ---------- */}
           {selectedRole === 'ORANG TUA' && (
             <>
               <div>
@@ -404,6 +416,56 @@ export default function Register({
                     value={formData.fullName}
                     onChange={handleChange}
                     placeholder="cth. Ayah Hendra Gunawan / Ibu Ratna"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  Nama Siswa
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:contact"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    name="studentName"
+                    required
+                    value={formData.studentName}
+                    onChange={handleChange}
+                    placeholder="Nama lengkap siswa"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  NISN Siswa
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:file-text"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    name="studentNisn"
+                    required
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    title="NISN harus terdiri dari 10 digit angka"
+                    value={formData.studentNisn}
+                    onChange={handleChange}
+                    placeholder="10 digit NISN siswa"
                     className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
@@ -492,6 +554,43 @@ export default function Register({
               <Icon icon="lucide:info" className="w-3.5 h-3.5 shrink-0" />
               <span>Minimal 8, maksimal 50 karakter</span>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+              Konfirmasi Kata Sandi
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Icon icon="lucide:lock" className="w-4 h-4 text-slate-400" />
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="passwordConfirmation"
+                required
+                minLength={8}
+                maxLength={50}
+                value={formData.passwordConfirmation}
+                onChange={handleChange}
+                placeholder="Ulangi kata sandi"
+                aria-invalid={passwordsDoNotMatch}
+                aria-describedby={
+                  passwordsDoNotMatch ? 'password-mismatch' : undefined
+                }
+                className={`w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm ${
+                  passwordsDoNotMatch ? 'ring-2 ring-red-400' : ''
+                }`}
+              />
+            </div>
+            {passwordsDoNotMatch && (
+              <p
+                id="password-mismatch"
+                className="mt-1.5 text-[11px] font-medium text-red-100"
+                role="alert"
+              >
+                Kata sandi tidak sama.
+              </p>
+            )}
           </div>
 
           {/* ---------- BANNER INFO KUNING KHUSUS ORANG TUA ---------- */}

@@ -1,458 +1,593 @@
 import React, { useState } from 'react';
+import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
 
-export default function Register({ onNavigateToLogin }) {
-  const [selectedRole, setSelectedRole] = useState('guru');
+export default function Register({
+  onNavigateToLogin,
+  onNavigateToLanding,
+  onRegisterSuccess,
+}) {
+  const [selectedRole, setSelectedRole] = useState('GURU');
   const [showPassword, setShowPassword] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
-  const [guruForm, setGuruForm] = useState({ fullName: '', nip: '', phone: '', email: '', password: '', agreeTerms: false });
-  const [muridForm, setMuridForm] = useState({ fullName: '', phone: '', nisn: '', kelas: '', email: '', password: '', agreeTerms: false });
-  const [orangTuaForm, setOrangTuaForm] = useState({ fullName: '', phone: '', email: '', password: '', agreeTerms: false });
+  const [formData, setFormData] = useState({
+    fullName: '',
+    nip: '',
+    nisn: '',
+    kelas: '',
+    phone: '',
+    email: '',
+    password: '',
+  });
+
+  const tabs = [
+    { id: 'GURU', label: 'GURU', icon: 'lucide:graduation-cap' },
+    { id: 'MURID', label: 'MURID', icon: 'lucide:smile' },
+    { id: 'ORANG TUA', label: 'ORANG TUA', icon: 'lucide:users' },
+  ];
+
+  const headerText = {
+    GURU: {
+      title: 'Daftar Akun Guru',
+      subtitle:
+        'Bergabung untuk mengajar bahasa isyarat & memantau perkembangan siswa',
+    },
+    MURID: {
+      title: 'Daftar Akun Murid',
+      subtitle:
+        'Mulai belajar bahasa isyarat BISINDO dan struktur kalimat SPOK secara interaktif',
+    },
+    'ORANG TUA': {
+      title: 'Daftar Akun Orang Tua',
+      subtitle:
+        'Dampingi perkembangan belajar bahasa isyarat & struktur kalimat anak secara berkala',
+    },
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Submit Register:', selectedRole);
+    if (!agreed) return;
+    if (onRegisterSuccess) {
+      onRegisterSuccess({ ...formData, role: selectedRole });
+    } else if (onNavigateToLogin) {
+      onNavigateToLogin();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-4 md:p-8 text-white font-sans relative overflow-hidden">
-      
-      {/* Background Ornamen */}
-      <div className="absolute top-[-100px] left-[-80px] w-[500px] h-[500px] bg-[#0067B8]/60 rounded-full blur-2xl pointer-events-none z-0"></div>
-      <div className="absolute bottom-[-150px] right-[-120px] w-[550px] h-[550px] bg-[#0067B8]/50 rounded-full blur-2xl pointer-events-none z-0"></div>
+    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-6 md:p-10 font-sans relative overflow-hidden">
+      {/* ================= 1. TOP BAR ================= */}
+      <div className="w-full max-w-7xl mx-auto flex justify-between items-center relative z-20">
+        <button
+          type="button"
+          onClick={() => {
+            if (onNavigateToLanding) onNavigateToLanding();
+          }}
+          title="Kembali ke Beranda"
+          className="focus:outline-none hover:opacity-90 transition origin-left scale-125 md:scale-150 cursor-pointer pointer-events-auto"
+        >
+          <div className="pointer-events-none">
+            <HearoLogo variant="transparent" className="h-12" />
+          </div>
+        </button>
 
-      {/* Header / Logo */}
-      <div className="flex justify-between items-center max-w-6xl w-full mx-auto z-10">
-        <HearoLogo className="h-14" />
-        <div className="hidden sm:flex items-center gap-2 text-xs bg-white/15 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 text-white font-medium shadow-sm">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#FFC72C]"></span>
-          Platform Edukasi Inklusif BISINDO & SPOK
+        <div className="hidden sm:flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 px-4 py-1.5 rounded-full text-white text-xs font-medium">
+          <Icon icon="lucide:sparkles" className="w-3.5 h-3.5 text-[#FCD34D]" />
+          <span>Platform Edukasi Inklusif BISINDO & SPOK</span>
         </div>
       </div>
 
-      {/* Main Container Card */}
-      <div className="max-w-2xl w-full mx-auto bg-white/20 backdrop-blur-xl border border-white/30 rounded-[36px] p-6 md:p-9 my-6 shadow-2xl z-10">
-        
-        {/* Tab Switcher Peran Kapsul Figma */}
-        <div className="bg-[#102A43] p-1.5 rounded-full border border-white/20 flex items-center mb-6">
-          <button
-            type="button"
-            onClick={() => setSelectedRole('guru')}
-            className={`flex-1 py-2.5 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-              selectedRole === 'guru'
-                ? 'bg-[#102A43] text-white border border-white/40 shadow-md'
-                : 'bg-white text-[#102A43] hover:bg-white/90'
-            }`}
-          >
-            <span>👨‍🏫 GURU</span>
-            {selectedRole === 'guru' && <span className="w-2 h-2 rounded-full bg-[#FFC72C]"></span>}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedRole('murid')}
-            className={`flex-1 py-2.5 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-              selectedRole === 'murid'
-                ? 'bg-[#102A43] text-white border border-white/40 shadow-md'
-                : 'bg-white text-[#102A43] hover:bg-white/90'
-            }`}
-          >
-            <span>👨‍🎓 MURID</span>
-            {selectedRole === 'murid' && <span className="w-2 h-2 rounded-full bg-[#FFC72C]"></span>}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedRole('orang_tua')}
-            className={`flex-1 py-2.5 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-              selectedRole === 'orang_tua'
-                ? 'bg-[#102A43] text-white border border-white/40 shadow-md'
-                : 'bg-white text-[#102A43] hover:bg-white/90'
-            }`}
-          >
-            <span>👨‍👩‍👧 ORANG TUA</span>
-            {selectedRole === 'orang_tua' && <span className="w-2 h-2 rounded-full bg-[#FFC72C]"></span>}
-          </button>
+      {/* ================= 2. FORM REGISTER CONTAINER ================= */}
+      <div
+        className={`w-full mx-auto my-6 z-10 transition-all duration-200 ${
+          selectedRole === 'MURID' ? 'max-w-[620px]' : 'max-w-[500px]'
+        }`}
+      >
+        {/* Pill Selector Role */}
+        <div className="max-w-[500px] mx-auto bg-white/20 backdrop-blur-md border border-white/30 p-1.5 rounded-full grid grid-cols-3 gap-2 shadow-sm mb-7">
+          {tabs.map((role) => {
+            const isSelected = selectedRole === role.id;
+            return (
+              <button
+                key={role.id}
+                type="button"
+                onClick={() => setSelectedRole(role.id)}
+                className={`py-2.5 px-3 rounded-full text-[11px] font-extrabold tracking-wide uppercase flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? 'bg-[#102A43] text-white shadow-md'
+                    : 'bg-white text-[#102A43] hover:bg-[#EEF4FF]'
+                }`}
+              >
+                <Icon
+                  icon={role.icon}
+                  className={`w-4 h-4 shrink-0 ${
+                    isSelected ? 'text-[#FCD34D]' : 'text-[#102A43]'
+                  }`}
+                />
+                <span className="truncate">{role.label}</span>
+                {isSelected && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FCD34D] shrink-0"></span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Title Dynamic */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-1.5 tracking-tight">
-            {selectedRole === 'guru' && 'Daftar Akun Guru'}
-            {selectedRole === 'murid' && 'Daftar Akun Murid'}
-            {selectedRole === 'orang_tua' && 'Daftar Akun Orang Tua'}
-          </h2>
-          <p className="text-xs md:text-sm text-[#F5FAFF]/90 font-medium leading-relaxed">
-            {selectedRole === 'guru' && 'Bergabung untuk mengajar bahasa isyarat & memadukan perkembangan siswa'}
-            {selectedRole === 'murid' && 'Mulai belajar bahasa isyarat BISINDO dan struktur kalimat SPOK secara interaktif'}
-            {selectedRole === 'orang_tua' && 'Dampingi perkembangan belajar bahasa isyarat & struktur kalimat anak secara berkala'}
+        {/* Judul & Subjudul Dinamis */}
+        <div className="text-center space-y-1.5 mb-7">
+          <h1 className="text-2xl md:text-[30px] font-extrabold text-white tracking-tight">
+            {headerText[selectedRole].title}
+          </h1>
+          <p className="text-xs md:text-sm text-white/90 font-normal max-w-md mx-auto leading-relaxed">
+            {headerText[selectedRole].subtitle}
           </p>
         </div>
 
-        {/* FORM REGISTER */}
+        {/* ================= FORM DINAMIS PER ROLE ================= */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* ================= FORM GURU ================= */}
-          {selectedRole === 'guru' && (
-            <div className="space-y-4">
+          {/* ---------- FORM KHUSUS GURU (5 FIELD VERTIKAL) ---------- */}
+          {selectedRole === 'GURU' && (
+            <>
               <div>
-                <div className="flex justify-between items-center mb-1 pl-1">
-                  <label className="text-xs font-semibold text-white">Nama Lengkap</label>
-                  <span className="text-[10px] text-white/70">Wajib diisi</span>
+                <div className="flex justify-between items-center mb-1.5 px-0.5">
+                  <label className="text-xs font-bold text-white">
+                    Nama Lengkap
+                  </label>
+                  <span className="text-[11px] text-white/80 font-medium">
+                    Wajib diisi
+                  </span>
                 </div>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">👤</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:contact"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="text"
+                    name="fullName"
                     required
-                    value={guruForm.fullName}
-                    onChange={(e) => setGuruForm({ ...guruForm, fullName: e.target.value })}
+                    value={formData.fullName}
+                    onChange={handleChange}
                     placeholder="cth. Ibu Siti Rahmawati, S.Pd"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-1 pl-1">
-                  <label className="text-xs font-semibold text-white">NIP (Nomor Induk Pegawai)</label>
-                  <span className="text-[10px] text-white/70">Atau NUPTK</span>
+                <div className="flex justify-between items-center mb-1.5 px-0.5">
+                  <label className="text-xs font-bold text-white">
+                    NIP (Nomor Induk Pegawai)
+                  </label>
+                  <span className="text-[11px] text-white/80 font-medium">
+                    Atau NUPTK
+                  </span>
                 </div>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🪪</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:file-text"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="text"
-                    required
-                    value={guruForm.nip}
-                    onChange={(e) => setGuruForm({ ...guruForm, nip: e.target.value })}
+                    name="nip"
+                    value={formData.nip}
+                    onChange={handleChange}
                     placeholder="18 digit NIP resmi atau NUPTK"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Nomor Telepon / WhatsApp</label>
+                <div className="flex justify-between items-center mb-1.5 px-0.5">
+                  <label className="text-xs font-bold text-white">
+                    Nomor Telepon / WhatsApp
+                  </label>
+                </div>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">📞</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:phone"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="tel"
+                    name="phone"
                     required
-                    value={guruForm.phone}
-                    onChange={(e) => setGuruForm({ ...guruForm, phone: e.target.value })}
+                    value={formData.phone}
+                    onChange={handleChange}
                     placeholder="0812-xxxx-xxxx"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Email Resmi</label>
+                <div className="flex justify-between items-center mb-1.5 px-0.5">
+                  <label className="text-xs font-bold text-white">
+                    Email Resmi
+                  </label>
+                </div>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">✉️</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:mail"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="email"
+                    name="email"
                     required
-                    value={guruForm.email}
-                    onChange={(e) => setGuruForm({ ...guruForm, email: e.target.value })}
+                    value={formData.email}
+                    onChange={handleChange}
                     placeholder="guru@sekolah.sch.id atau nama@hearo.id"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Kata Sandi</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔒</span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={guruForm.password}
-                    onChange={(e) => setGuruForm({ ...guruForm, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-11 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    👁
-                  </button>
-                </div>
-                <p className="text-[10px] text-white/80 mt-1 pl-1">ⓘ Minimal 8, maksimal 50 karakter</p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1 pl-1">
-                <input
-                  type="checkbox"
-                  id="agreeGuru"
-                  required
-                  checked={guruForm.agreeTerms}
-                  onChange={(e) => setGuruForm({ ...guruForm, agreeTerms: e.target.checked })}
-                  className="w-4 h-4 rounded text-[#007EDA] focus:ring-0 cursor-pointer"
-                />
-                <label htmlFor="agreeGuru" className="text-xs text-white/90 font-medium cursor-pointer">
-                  Saya menyetujui <a href="#" className="font-bold underline">Ketentuan Layanan</a> & <a href="#" className="font-bold underline">Kebijakan Privasi</a> Hearo AI
-                </label>
-              </div>
-            </div>
+            </>
           )}
 
-          {/* ================= FORM MURID ================= */}
-          {selectedRole === 'murid' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {/* ---------- FORM KHUSUS MURID (2 KOLOM + 1 KOLOM) ---------- */}
+          {selectedRole === 'MURID' && (
+            <>
+              {/* Baris 1: Nama Lengkap & Nomor Telepon */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-white mb-1 pl-1">Nama Lengkap</label>
+                  <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                    Nama Lengkap
+                  </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">👤</span>
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:user"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
                     <input
                       type="text"
+                      name="fullName"
                       required
-                      value={muridForm.fullName}
-                      onChange={(e) => setMuridForm({ ...muridForm, fullName: e.target.value })}
+                      value={formData.fullName}
+                      onChange={handleChange}
                       placeholder="cth. Dimas Prasetyo"
-                      className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                      className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-white mb-1 pl-1">Nomor Telepon / WhatsApp</label>
+                  <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                    Nomor Telepon / WhatsApp
+                  </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">📞</span>
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:phone"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
                     <input
                       type="tel"
+                      name="phone"
                       required
-                      value={muridForm.phone}
-                      onChange={(e) => setMuridForm({ ...muridForm, phone: e.target.value })}
+                      value={formData.phone}
+                      onChange={handleChange}
                       placeholder="cth. 0812-xxxx-xxxx"
-                      className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                      className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Baris 2: NISN & Kelas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-white mb-1 pl-1">NISN (Nomor Induk Siswa Nasional)</label>
+                  <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                    NISN (Nomor Induk Siswa Nasional)
+                  </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🪪</span>
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:contact"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
                     <input
                       type="text"
-                      required
-                      value={muridForm.nisn}
-                      onChange={(e) => setMuridForm({ ...muridForm, nisn: e.target.value })}
+                      name="nisn"
+                      value={formData.nisn}
+                      onChange={handleChange}
                       placeholder="10 digit NISN resmi"
-                      className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                      className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-white mb-1 pl-1">Kelas</label>
+                  <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                    Kelas
+                  </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🏫</span>
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:school"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
                     <select
+                      name="kelas"
                       required
-                      value={muridForm.kelas}
-                      onChange={(e) => setMuridForm({ ...muridForm, kelas: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm font-medium appearance-none cursor-pointer"
+                      value={formData.kelas}
+                      onChange={handleChange}
+                      className={`w-full pl-11 pr-10 py-3.5 bg-white rounded-xl text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm ${
+                        formData.kelas ? 'text-[#102A43]' : 'text-slate-400'
+                      }`}
                     >
-                      <option value="">Pilih Kelas</option>
-                      <option value="SD - Kelas 1-3">SD - Kelas 1-3</option>
-                      <option value="SD - Kelas 4-6">SD - Kelas 4-6</option>
-                      <option value="SMP">SMP</option>
-                      <option value="SMA / SMK">SMA / SMK</option>
+                      <option value="" disabled>
+                        Pilih Kelas
+                      </option>
+                      <option value="SDLB - Kelas 1-6">SDLB (Kelas 1 - 6)</option>
+                      <option value="SMPLB - Kelas 7">SMPLB - Kelas 7</option>
+                      <option value="SMPLB - Kelas 8">SMPLB - Kelas 8</option>
+                      <option value="SMPLB - Kelas 9">SMPLB - Kelas 9</option>
+                      <option value="SMALB - Kelas 10">SMALB - Kelas 10</option>
+                      <option value="SMALB - Kelas 11">SMALB - Kelas 11</option>
+                      <option value="SMALB - Kelas 12">SMALB - Kelas 12</option>
                     </select>
+                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:chevron-down"
+                        className="w-4 h-4 text-slate-500"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Baris 3: Email Siswa / Akun Belajar */}
               <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Email Siswa / Akun Belajar</label>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  Email Siswa / Akun Belajar
+                </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">✉️</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:mail"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="email"
+                    name="email"
                     required
-                    value={muridForm.email}
-                    onChange={(e) => setMuridForm({ ...muridForm, email: e.target.value })}
+                    value={formData.email}
+                    onChange={handleChange}
                     placeholder="murid@sekolah.sch.id atau nama@email.com"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Kata Sandi</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔒</span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={muridForm.password}
-                    onChange={(e) => setMuridForm({ ...muridForm, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-11 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    👁
-                  </button>
-                </div>
-                <p className="text-[10px] text-white/80 mt-1 pl-1">ⓘ Minimal 8, maksimal 50 karakter</p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1 pl-1">
-                <input
-                  type="checkbox"
-                  id="agreeMurid"
-                  required
-                  checked={muridForm.agreeTerms}
-                  onChange={(e) => setMuridForm({ ...muridForm, agreeTerms: e.target.checked })}
-                  className="w-4 h-4 rounded text-[#007EDA] focus:ring-0 cursor-pointer"
-                />
-                <label htmlFor="agreeMurid" className="text-xs text-white/90 font-medium cursor-pointer">
-                  Saya menyetujui <a href="#" className="font-bold underline">Ketentuan Layanan</a> & <a href="#" className="font-bold underline">Kebijakan Privasi</a> Hearo AI
-                </label>
-              </div>
-            </div>
+            </>
           )}
 
-          {/* ================= FORM ORANG TUA ================= */}
-          {selectedRole === 'orang_tua' && (
-            <div className="space-y-4">
+          {/* ---------- FORM KHUSUS ORANG TUA (4 FIELD + BANNER INFO KUNING) ---------- */}
+          {selectedRole === 'ORANG TUA' && (
+            <>
               <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Nama Lengkap</label>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  Nama Lengkap
+                </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">👤</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:user"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="text"
+                    name="fullName"
                     required
-                    value={orangTuaForm.fullName}
-                    onChange={(e) => setOrangTuaForm({ ...orangTuaForm, fullName: e.target.value })}
+                    value={formData.fullName}
+                    onChange={handleChange}
                     placeholder="cth. Ayah Hendra Gunawan / Ibu Ratna"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Nomor Telepon / WhatsApp</label>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  Nomor Telepon / WhatsApp
+                </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">📞</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:phone"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="tel"
+                    name="phone"
                     required
-                    value={orangTuaForm.phone}
-                    onChange={(e) => setOrangTuaForm({ ...orangTuaForm, phone: e.target.value })}
+                    value={formData.phone}
+                    onChange={handleChange}
                     placeholder="cth. 0812-xxxx-xxxx"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Email</label>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  Email
+                </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">✉️</span>
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:mail"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
                   <input
                     type="email"
+                    name="email"
                     required
-                    value={orangTuaForm.email}
-                    onChange={(e) => setOrangTuaForm({ ...orangTuaForm, email: e.target.value })}
+                    value={formData.email}
+                    onChange={handleChange}
                     placeholder="nama@email.com"
-                    className="w-full pl-10 pr-4 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                   />
                 </div>
               </div>
+            </>
+          )}
 
-              <div>
-                <label className="block text-xs font-semibold text-white mb-1 pl-1">Kata Sandi</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">🔒</span>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={orangTuaForm.password}
-                    onChange={(e) => setOrangTuaForm({ ...orangTuaForm, password: e.target.value })}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-11 py-3 bg-[#F5FAFF] text-[#102A43] rounded-2xl border border-transparent focus:outline-none focus:ring-2 focus:ring-[#6DD5FA] text-sm placeholder-slate-400 font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    👁
-                  </button>
-                </div>
-                <p className="text-[10px] text-white/80 mt-1 pl-1">ⓘ Minimal 8, maksimal 50 karakter</p>
+          {/* ---------- KATA SANDI (SEMUA ROLE SAMA) ---------- */}
+          <div>
+            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+              Kata Sandi
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Icon icon="lucide:lock" className="w-4 h-4 text-slate-400" />
               </div>
-
-              {/* Info Box Kuning Spesifik Orang Tua Figma */}
-              <div className="bg-[#FFF9C4] text-[#5D4037] p-3.5 rounded-2xl flex items-start gap-3 border border-[#FFF59D] my-2 shadow-sm">
-                <span className="text-xl">👨‍👩‍👧</span>
-                <div className="text-xs leading-relaxed font-medium">
-                  <span className="font-bold block text-slate-900 mb-0.5">Akun akan dihubungkan dengan data anak oleh guru kelas.</span>
-                  Pastikan nama orang tua dan kontak aktif agar verifikasi wali murid di sekolah berlangsung cepat.
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1 pl-1">
-                <input
-                  type="checkbox"
-                  id="agreeOrangTua"
-                  required
-                  checked={orangTuaForm.agreeTerms}
-                  onChange={(e) => setOrangTuaForm({ ...orangTuaForm, agreeTerms: e.target.checked })}
-                  className="w-4 h-4 rounded text-[#007EDA] focus:ring-0 cursor-pointer"
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                required
+                minLength={8}
+                maxLength={50}
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••••••"
+                className="w-full pl-11 pr-11 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-[#102A43]"
+              >
+                <Icon
+                  icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
+                  className="w-4 h-4"
                 />
-                <label htmlFor="agreeOrangTua" className="text-xs text-white/90 font-medium cursor-pointer">
-                  Saya menyetujui <a href="#" className="font-bold underline">Ketentuan Layanan</a> & <a href="#" className="font-bold underline">Kebijakan Privasi</a> Hearo AI
-                </label>
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-white/85">
+              <Icon icon="lucide:info" className="w-3.5 h-3.5 shrink-0" />
+              <span>Minimal 8, maksimal 50 karakter</span>
+            </div>
+          </div>
+
+          {/* ---------- BANNER INFO KUNING KHUSUS ORANG TUA ---------- */}
+          {selectedRole === 'ORANG TUA' && (
+            <div className="bg-[#FEF9C3] border border-[#FDE047] rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[#FCD34D]/40 flex items-center justify-center shrink-0 mt-0.5">
+                <Icon
+                  icon="lucide:users"
+                  className="w-4 h-4 text-[#102A43]"
+                />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-extrabold text-[#102A43] leading-snug">
+                  Akun akan dihubungkan dengan data anak oleh guru kelas.
+                </h4>
+                <p className="text-[11px] text-slate-700 leading-relaxed">
+                  Pastikan nama orang tua dan kontak aktif agar verifikasi wali
+                  murid di sekolah berlangsung cepat.
+                </p>
               </div>
             </div>
           )}
 
-          {/* Tombol Submit */}
-          <div className="pt-3">
+          {/* Checkbox Syarat & Ketentuan */}
+          <div className="flex items-center gap-2.5 pt-1">
+            <input
+              id="terms"
+              type="checkbox"
+              required
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="w-4 h-4 rounded border-white text-[#102A43] focus:ring-0 cursor-pointer accent-[#102A43]"
+            />
+            <label
+              htmlFor="terms"
+              className="text-xs text-white/90 select-none cursor-pointer"
+            >
+              Saya menyetujui{' '}
+              <a
+                href="#terms"
+                className="font-bold underline hover:text-[#FCD34D]"
+              >
+                Ketentuan Layanan
+              </a>{' '}
+              &{' '}
+              <a
+                href="#privacy"
+                className="font-bold underline hover:text-[#FCD34D]"
+              >
+                Kebijakan Privasi
+              </a>{' '}
+              Hearo AI
+            </label>
+          </div>
+
+          {/* Tombol Daftar Sekarang */}
+          <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#102A43] hover:bg-[#0067B8] text-white font-bold rounded-full shadow-xl transition duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 bg-[#102A43] hover:bg-[#0B1E30] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer"
             >
               <span>Daftar Sekarang</span>
-              <span className="text-base">→</span>
+              <Icon icon="lucide:arrow-right" className="w-4 h-4" />
             </button>
           </div>
         </form>
 
-        {/* Link Kembali ke Login */}
-        <div className="text-center mt-5 text-xs text-white/90 font-medium">
+        {/* Link Sudah Punya Akun? Log In */}
+        <div className="mt-6 text-center text-xs text-white/90 font-medium">
           Sudah punya akun?{' '}
           <button
             type="button"
             onClick={onNavigateToLogin}
-            className="font-bold text-white hover:underline cursor-pointer bg-transparent border-0 p-0"
+            className="font-extrabold text-white underline hover:text-[#FCD34D] cursor-pointer"
           >
             Log In
           </button>
         </div>
-
       </div>
 
-      {/* Footer Text & Badges Figma */}
-      <div className="flex flex-col sm:flex-row justify-between items-center max-w-6xl w-full mx-auto text-[11px] text-white/70 z-10 gap-2 pt-4 border-t border-white/10">
-        <div>Hearo AI © 2026 - Media Belajar Aksesibel Inklusif • Didukung Pengenalan BISINDO & SPOK</div>
-        <div className="flex gap-4 text-white/80 font-medium">
-          <span>♿ Standar WCAG 2.1 AAA (Aksesibilitas Ramah Tuli)</span>
-          <span>🤟 Bahasa Isyarat Indonesia (BISINDO)</span>
+      {/* ================= 3. FOOTER COPYRIGHT & STANDAR AKSESIBILITAS ================= */}
+      <div className="w-full max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row justify-between items-center text-[11px] text-white/85 font-medium gap-3 z-10">
+        <div>
+          Hearo AI © 2025 • Media Belajar Aksesibel Inklusif • Didukung
+          Pengenalan BISINDO & SPOK
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1">
+            <Icon icon="lucide:accessibility" className="w-3.5 h-3.5" />
+            <span>Standar WCAG 2.1 AAA</span>
+          </span>
+          <span>•</span>
+          <span className="inline-flex items-center gap-1">
+            <Icon icon="lucide:languages" className="w-3.5 h-3.5" />
+            <span>Bahasa Isyarat Indonesia</span>
+          </span>
         </div>
       </div>
     </div>

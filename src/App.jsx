@@ -16,11 +16,17 @@ function App() {
       )}
 
       {currentPage === 'login' && (
-        <Login onNavigateToRegister={() => setCurrentPage('register')} />
+        <Login
+          onNavigateToRegister={() => setCurrentPage('register')}
+          onNavigateToLanding={() => setCurrentPage('landing')}
+        />
       )}
 
       {currentPage === 'register' && (
-        <Register onNavigateToLogin={() => setCurrentPage('login')} />
+        <Register
+          onNavigateToLogin={() => setCurrentPage('login')}
+          onNavigateToLanding={() => setCurrentPage('landing')}
+        />
       )}
     </div>
   );

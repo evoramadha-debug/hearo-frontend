@@ -97,14 +97,14 @@ export default function StudentDashboard({ user, onLogout }) {
       label: 'Materi',
       icon: 'lucide:book-marked',
       headerTitle: 'Materi Belajar',
-      subtitle: 'Kurikulum terstruktur tata bahasa SPOK & isyarat',
+      subtitle: 'Eksplorasi modul pembelajaran bahasa isyarat BISINDO & struktur SPOK',
     },
     {
       id: 'quiz',
       label: 'Quiz',
       icon: 'lucide:file-question',
-      headerTitle: 'Latihan & Quiz',
-      subtitle: 'Latihan interaktif & evaluasi pemahaman isyarat',
+      headerTitle: 'Arena Quiz',
+      subtitle: 'Uji kemampuan bahasa isyarat & struktur SPOK dengan tantangan interaktif',
     },
     {
       id: 'riwayat',
@@ -160,13 +160,15 @@ export default function StudentDashboard({ user, onLogout }) {
       illustration: 'materi',
     },
     {
-   id: 'quiz',
-   label: 'Quiz',
-   icon: 'lucide:file-question',
-   headerTitle: 'Arena Quiz',
-   subtitle:
-     'Uji kemampuan bahasa isyarat & struktur SPOK dengan tantangan interaktif',
- },
+    id: 'quiz', // sesuaikan dengan key menu tujuan di 2 objek atasnya (misal: id / menu / target)
+    badge: 'Evaluasi Interaktif',
+    badgeIcon: 'lucide:trophy',
+    title: 'Arena Quiz & Tantangan',
+    description: // gunakan 'desc' jika 2 objek di atasnya memakai 'desc'
+      'Uji pemahaman bahasa isyarat dan tata bahasa SPOK melalui kuis pilihan ganda serta susun kata interaktif.',
+    gradient: 'from-[#FEF9C3]/80 via-[#FEF3C7]/60 to-[#FFFBEB]', // sesuaikan dengan key warna di atasnya
+    illustration: 'quiz',
+  },
   ];
 
   // Fungsi Analisis & Koreksi Kalimat Isyarat -> SPOK Baku
@@ -398,46 +400,91 @@ export default function StudentDashboard({ user, onLogout }) {
 
       {/* ================= 2. KONTEN UTAMA KANAN ================= */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header Bar */}
-        <header className="bg-white border-b border-slate-200/80 px-6 md:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
-          <div>
-            <h1 className="text-xl font-extrabold text-[#102A43] tracking-tight">
-              {currentMenuObj.headerTitle}
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {currentMenuObj.subtitle}
-            </p>
+       {/* Top Header Bar */}
+        <header className="bg-white border-b border-slate-200/80 px-6 md:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
+          {/* Kiri: Judul & Subjudul Halaman */}
+          <div className="flex items-center gap-3.5">
+            {activeMenu === 'quiz' && (
+              <span className="w-1 h-10 rounded-full bg-[#007EDA] shrink-0" />
+            )}
+
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-lg md:text-xl font-extrabold text-[#102A43] leading-tight">
+                  {activeMenu === 'beranda' && 'Beranda'}
+                  {activeMenu === 'kamus' && 'Kamus Isyarat'}
+                  {activeMenu === 'materi' && 'Materi Belajar'}
+                  {activeMenu === 'quiz' && 'Arena Quiz'}
+                  {activeMenu === 'riwayat' && 'Riwayat Belajar'}
+                  {activeMenu === 'pengaturan' && 'Pengaturan & Profil'}
+                </h1>
+                {activeMenu === 'quiz' && (
+                  <span className="bg-[#FCD34D] text-[#102A43] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                    Murid
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {activeMenu === 'beranda' &&
+                  'Ringkasan aktivitas belajar dan akses cepat fitur utama'}
+                {activeMenu === 'kamus' &&
+                  'Cari dan pelajari kosakata SIBI & BISINDO secara visual'}
+                {activeMenu === 'materi' &&
+                  'Eksplorasi modul pembelajaran bahasa isyarat BISINDO & struktur SPOK'}
+                {activeMenu === 'quiz' &&
+                  'Uji kemampuan bahasa isyarat & struktur SPOK dengan tantangan interaktif'}
+                {activeMenu === 'riwayat' &&
+                  'Pantau progres materi dan hasil quiz yang telah dikerjakan'}
+                {activeMenu === 'pengaturan' &&
+                  'Kelola informasi akun dan preferensi aksesibilitas'}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="bg-[#FCD34D] text-[#102A43] px-3.5 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide inline-flex items-center gap-1.5 shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#102A43]"></span>
-              <span>MURID</span>
-            </div>
+          {/* Kanan: Badge Role Murid & Profil Siswa */}
+          <div className="flex items-center gap-3.5 shrink-0">
+            {activeMenu === 'quiz' ? (
+              <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-xs font-extrabold px-3.5 py-1.5 rounded-full shadow-2xs">
+                <Icon icon="lucide:graduation-cap" className="w-3.5 h-3.5" />
+                <span>Murid</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-xs font-extrabold px-3.5 py-1.5 rounded-full shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#102A43]" />
+                <span>MURID</span>
+              </span>
+            )}
 
-            <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
-              <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-[#007EDA]/15 border border-[#007EDA]/30 flex items-center justify-center overflow-hidden">
-                  <Icon icon="noto:boy-light-skin-tone" className="w-7 h-7" />
-                </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+            <div className="flex items-center gap-2.5">
+              <div className="relative w-9 h-9 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] flex items-center justify-center">
+                <Icon icon="noto:boy-light-skin-tone" className="w-7 h-7" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white absolute -bottom-0.5 -right-0.5" />
               </div>
-              <span className="text-xs md:text-sm font-bold text-[#102A43] hidden sm:inline">
+              <span className="text-xs md:text-sm font-extrabold text-[#102A43] hidden sm:inline">
                 {studentName}
               </span>
             </div>
+
+            {activeMenu === 'quiz' && (
+              <Icon
+                icon="solar:verified-check-bold"
+                className="w-4 h-4 text-[#F59E0B] hidden md:inline ml-1"
+              />
+            )}
           </div>
         </header>
-
-        {/* Isi Halaman Berdasarkan Menu Aktif */}
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8">
-          {/* ================================================================= */}
-          {/* MENU 1: BERANDA                                                   */}
-          {/* ================================================================= */}
-          {activeMenu === 'beranda' && (
-            <>
-              {/* -------- SECTION A: BANNER SAPAAN & CAPAIAN MINGGUAN -------- */}
-              <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 md:p-8 relative overflow-hidden flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+       {/* Isi Halaman Berdasarkan Menu Aktif */}
+      <main
+        className={`flex-1 overflow-y-auto ${
+          activeMenu === 'materi' ? 'bg-white' : 'bg-[#F3F7FC]'
+        } p-6 md:p-8`}
+      >
+        {activeMenu === 'beranda' && (
+          <>
+            {/* -------- SECTION A: BANNER SAPAAN & CAPAIAN MINGGUAN -------- */}
+            <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 md:p-8 relative overflow-hidden flex flex-col ...">
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#007EDA]"></div>
 
                 <div className="space-y-3 pl-2">

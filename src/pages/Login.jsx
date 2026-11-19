@@ -5,6 +5,7 @@ import HearoLogo from '../components/HearoLogo';
 export default function Login({
   onNavigateToRegister,
   onNavigateToLanding,
+  onNavigateToForgotPassword,
   onLoginSuccess,
 }) {
   const [selectedRole, setSelectedRole] = useState('GURU');
@@ -155,10 +156,11 @@ export default function Login({
           <div className="space-y-1.5">
             <div className="flex justify-start">
               <button
-                type="button"
-                className="text-[11px] font-bold text-[#102A43] hover:underline"
+                 type="button"
+                  onClick={() => onNavigateToForgotPassword?.(email, selectedRole)}
+                  className="text-xs font-extrabold text-[#102A43] hover:underline cursor-pointer"
               >
-                Lupa Password?
+                  Lupa Password?
               </button>
             </div>
             <div className="relative">

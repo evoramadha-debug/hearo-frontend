@@ -74,7 +74,8 @@ export default function StudentDashboard({ user, onLogout }) {
   );
 
 
-  const firstName = 'Dimas';
+  const fullName = user?.fullName || user?.name || 'Fauz Mulya Vaifriel';
+  const firstName = fullName.trim().split(' ')[0];  
 
   const menuItems = [
     {
@@ -483,11 +484,12 @@ export default function StudentDashboard({ user, onLogout }) {
       >
         {activeMenu === 'beranda' && (
           <>
-            {/* -------- SECTION A: BANNER SAPAAN & CAPAIAN MINGGUAN -------- */}
-            <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 md:p-8 relative overflow-hidden flex flex-col ...">
+           {/* -------- SECTION A: BANNER SAPAAN & CAPAIAN MINGGUAN -------- */}
+              <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#007EDA]"></div>
 
-                <div className="space-y-3 pl-2">
+                {/* Sisi Kiri: Sapaan & Deskripsi */}
+                <div className="flex-1 space-y-3 pl-2">
                   <h2 className="text-2xl md:text-[28px] font-extrabold text-[#102A43] leading-tight">
                     Halo, {firstName}! Siap belajar
                     <br className="hidden sm:inline" /> hari ini?
@@ -506,7 +508,8 @@ export default function StudentDashboard({ user, onLogout }) {
                   </p>
                 </div>
 
-                <div className="bg-[#F8FAFC] border border-slate-200/90 rounded-2xl p-5 w-full lg:w-[340px] shrink-0 space-y-3.5">
+                {/* Sisi Kanan: Kartu Capaian Belajar Mingguan */}
+                <div className="bg-[#F8FAFC] border border-slate-200/90 rounded-2xl p-5 w-full md:w-[355px] lg:w-[380px] shrink-0 space-y-3.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#102A43]">
                       Capaian Belajar Mingguan
@@ -524,18 +527,18 @@ export default function StudentDashboard({ user, onLogout }) {
                   </div>
 
                   <div className="flex items-center justify-between gap-2 pt-0.5">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 font-medium whitespace-nowrap">
                       <Icon
                         icon="lucide:check-circle-2"
-                        className="w-3.5 h-3.5 text-[#007EDA]"
+                        className="w-3.5 h-3.5 text-[#007EDA] shrink-0"
                       />
                       <span>9 dari 20 materi selesai</span>
                     </span>
 
-                    <span className="inline-flex items-center gap-1 bg-[#FEF9C3] border border-[#FDE047] text-[#102A43] text-[11px] font-extrabold px-2.5 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1 bg-[#FEF9C3] border border-[#FDE047] text-[#102A43] text-[11px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">
                       <Icon
                         icon="lucide:zap"
-                        className="w-3 h-3 text-amber-500 fill-amber-500"
+                        className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0"
                       />
                       <span>4 Hari Berturut-turut</span>
                     </span>
@@ -1022,13 +1025,6 @@ export default function StudentDashboard({ user, onLogout }) {
         </main>
 
 
-        {/* Footer Aksesibilitas WCAG */}
-        <footer className="bg-[#E5E7EB]/80 border-t-2 border-slate-300/70 py-4 px-6 text-center">
-          <p className="text-xs text-slate-500 font-medium">
-            Hearo AI dirancang khusus untuk pembelajaran inklusif &amp; ramah Tuli
-            berdasarkan pedoman WCAG 2.1 AAA.
-          </p>
-        </footer>
       </div>
 
 

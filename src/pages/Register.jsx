@@ -431,11 +431,7 @@ export default function Register({
           Pengenalan BISINDO & SPOK
         </div>
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1">
-            <Icon icon="lucide:accessibility" className="w-3.5 h-3.5" />
-            <span>Standar WCAG 2.1 AAA</span>
-          </span>
-          <span>•</span>
+
           <span className="inline-flex items-center gap-1">
             <Icon icon="lucide:languages" className="w-3.5 h-3.5" />
             <span>Bahasa Isyarat Indonesia</span>

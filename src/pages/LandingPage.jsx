@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import HearoLogo from '../components/HearoLogo';
 import { Icon } from '@iconify/react';
 import logoIcon from '../assets/logo-icon.svg';
@@ -6,6 +6,38 @@ import logoIcon from '../assets/logo-icon.svg';
 export default function LandingPage({ onNavigateToLogin, onNavigateToRegister }) {
   const [activeTab, setActiveTab] = useState('SIBI'); // SIBI / BISINDO
   const [activeNav, setActiveNav] = useState('Beranda');
+
+  useEffect(() => {
+    const sections = [
+      { id: 'hero', name: 'Beranda' },
+      { id: 'kamus', name: 'Kamus' },
+      { id: 'fitur', name: 'Fitur' },
+      { id: 'aplikasi', name: 'Aplikasi' },
+      { id: 'tentang', name: 'Tentang' },
+    ];
+
+    const updateActiveNav = () => {
+      const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+      const activationPoint = headerHeight + 32;
+      const currentSection = sections.reduce((activeSection, section) => {
+        const element = document.getElementById(section.id);
+        return element && element.getBoundingClientRect().top <= activationPoint
+          ? section.name
+          : activeSection;
+      }, sections[0].name);
+
+      setActiveNav(currentSection);
+    };
+
+    updateActiveNav();
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    window.addEventListener('resize', updateActiveNav);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveNav);
+      window.removeEventListener('resize', updateActiveNav);
+    };
+  }, []);
   
   // State untuk Pop-up Modal Karakter Kamus
   const [selectedCharacter, setSelectedCharacter] = useState(null);
@@ -54,11 +86,12 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             <HearoLogo variant="card" />
           </div>
 
-          <nav className="hidden md:flex items-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
+          <nav aria-label="Navigasi utama" className="hidden md:flex items-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
             {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
               <button
                 key={item}
-                onClick={() => handleNavClick(item.toLowerCase(), item)}
+                onClick={() => handleNavClick(item === 'Beranda' ? 'hero' : item.toLowerCase(), item)}
+                aria-current={activeNav === item ? 'location' : undefined}
                 className={`px-5 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
                   activeNav === item
                     ? 'bg-white text-[#007EDA] shadow-md scale-102'
@@ -91,7 +124,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </header>
 
       {/* ================= 2. HERO BANNER SECTION ================= */}
-      <section id="hero" className="bg-[#007EDA] text-white py-12 md:py-20 relative overflow-hidden">
+      <section id="hero" className="scroll-mt-20 bg-[#007EDA] text-white py-12 md:py-20 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#0067B8]/40 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-[#6DD5FA]/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -142,7 +175,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </section>
 
       {/* ================= 3. KAMUS BAHASA ISYARAT ================= */}
-      <section id="kamus" className="py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 text-center">
+      <section id="kamus" className="scroll-mt-20 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#102A43] mb-3">
           Kamus Bahasa Isyarat
         </h2>
@@ -301,7 +334,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       )}
 
       {/* ================= 4. FITUR UNGGULAN HEARO AI ================= */}
-      <section id="fitur" className="py-16 md:py-24 bg-[#EFF5FC]">
+      <section id="fitur" className="scroll-mt-20 py-16 md:py-24 bg-[#EFF5FC]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 text-center">
           
           <div className="inline-block bg-[#DCEBFA] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-4 tracking-wider">
@@ -406,7 +439,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </section>
 
       {/* ================= 5. APLIKASI HEARO MOBILE & PERAN PENGGUNA ================= */}
-      <section id="aplikasi" className="py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
+      <section id="aplikasi" className="scroll-mt-20 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
         
        {/* Banner Aplikasi Mobile Presisi Figma */}
         <div className="relative bg-[#EFF5FC] rounded-[36px] p-8 md:p-12 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm overflow-hidden">
@@ -469,7 +502,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
         </div>
         {/* Peran Pengguna Header */}
-        <div id="tentang" className="text-center">
+        <div id="tentang" className="scroll-mt-20 text-center">
           <div className="inline-block bg-[#E3F2FD] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-3 tracking-wider">
             PERAN PENGGUNA
           </div>

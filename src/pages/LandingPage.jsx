@@ -81,9 +81,9 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
     <div className="min-h-screen min-w-0 overflow-x-clip bg-[#F4F7FC] text-[#102A43] font-sans antialiased relative">
       
       {/* ================= 1. NAVBAR FIXED ================= */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
+      <header className="fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3.5">
-          <div className="flex flex-wrap justify-between items-center gap-y-2">
+          <div className="flex flex-wrap justify-between items-center gap-y-2 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4">
           
           <button
             type="button"
@@ -94,7 +94,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             <HearoLogo variant="card" />
           </button>
 
-          <nav aria-label="Navigasi utama" className="hidden md:flex items-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
+          <nav aria-label="Navigasi utama" className="hidden lg:flex items-center justify-self-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
             {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
               <button
                 key={item}
@@ -111,13 +111,13 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5 lg:ml-0 lg:justify-self-end">
             <button
               type="button"
               onClick={() => setIsMobileNavOpen((open) => !open)}
               aria-label={isMobileNavOpen ? 'Tutup navigasi' : 'Buka navigasi'}
               aria-expanded={isMobileNavOpen}
-              className="md:hidden w-9 h-9 rounded-full border border-slate-200 text-[#102A43] flex items-center justify-center"
+              className="lg:hidden w-9 h-9 rounded-full border border-slate-200 text-[#102A43] flex items-center justify-center"
             >
               <Icon icon={isMobileNavOpen ? 'lucide:x' : 'lucide:menu'} className="w-4 h-4" />
             </button>
@@ -141,7 +141,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
           </div>
           </div>
           {isMobileNavOpen && (
-            <nav aria-label="Navigasi mobile" className="md:hidden mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+            <nav aria-label="Navigasi mobile" className="lg:hidden mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
               {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
                 <button
                   key={item}
@@ -162,7 +162,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </header>
 
       {/* ================= 2. HERO BANNER SECTION ================= */}
-      <section id="hero" className="scroll-mt-20 bg-[#007EDA] text-white py-12 md:py-20 relative overflow-hidden">
+      <section id="hero" className="scroll-mt-24 bg-[#007EDA] text-white pt-24 pb-12 md:pt-28 md:pb-20 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#0067B8]/40 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-[#6DD5FA]/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -213,7 +213,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </section>
 
       {/* ================= 3. KAMUS BAHASA ISYARAT ================= */}
-      <section id="kamus" className="scroll-mt-20 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 text-center">
+      <section id="kamus" className="scroll-mt-24 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#102A43] mb-3">
           Kamus Bahasa Isyarat
         </h2>
@@ -372,7 +372,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       )}
 
       {/* ================= 4. FITUR UNGGULAN HEARO AI ================= */}
-      <section id="fitur" className="scroll-mt-20 py-16 md:py-24 bg-[#EFF5FC]">
+      <section id="fitur" className="scroll-mt-24 py-16 md:py-24 bg-[#EFF5FC]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 text-center">
           
           <div className="inline-block bg-[#DCEBFA] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-4 tracking-wider">
@@ -477,7 +477,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </section>
 
       {/* ================= 5. APLIKASI HEARO MOBILE & PERAN PENGGUNA ================= */}
-      <section id="aplikasi" className="scroll-mt-20 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
+      <section id="aplikasi" className="scroll-mt-24 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
         
        {/* Banner Aplikasi Mobile Presisi Figma */}
         <div className="relative bg-[#EFF5FC] rounded-[36px] p-8 md:p-12 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm overflow-hidden">
@@ -545,7 +545,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
         </div>
         {/* Peran Pengguna Header */}
-        <div id="tentang" className="scroll-mt-20 text-center">
+        <div id="tentang" className="scroll-mt-24 text-center">
           <div className="inline-block bg-[#E3F2FD] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-3 tracking-wider">
             PERAN PENGGUNA
           </div>

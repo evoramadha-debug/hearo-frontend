@@ -24,6 +24,12 @@ const getSibiImageSrc = (char) => {
 
 const SIBI_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const SIBI_NUMBERS = '0123456789'.split('');
+const SPOK_TAG_COLORS = {
+  S: 'bg-[#007EDA]',
+  P: 'bg-[#16A34A]',
+  O: 'bg-[#EA580C]',
+  K: 'bg-[#9333EA]',
+};
 
 const SIBI_DESCRIPTIONS = {
   A: 'Kepalkan tangan dengan ibu jari menempel tegak di sisi samping jari telunjuk.',
@@ -67,6 +73,7 @@ const SIBI_DESCRIPTIONS = {
 export default function StudentDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('beranda');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [materials, setMaterials] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
   const [learningHistory, setLearningHistory] = useState([]);
@@ -129,17 +136,15 @@ export default function StudentDashboard({ user, onLogout }) {
   // State interaktif untuk Hearo Refine Studio (Koreksi SPOK)
   const [signInput, setSignInput] = useState('');
   const [refinedResult, setRefinedResult] = useState(null);
+  const [isRefining, setIsRefining] = useState(false);
 
   // State interaktif untuk Kamus Bahasa Isyarat
   const [dictionaryType, setDictionaryType] = useState('SIBI'); // 'SIBI' | 'BISINDO'
   const [selectedChar, setSelectedChar] = useState(null);
-  const [studentName, setStudentName] = useState(
-  user?.name || 'Fauz Mulya Vaifriel'
-  );
+  const [studentName, setStudentName] = useState(user?.name || user?.fullName || '');
 
-
-  const fullName = user?.fullName || user?.name || 'Fauz Mulya Vaifriel';
-  const firstName = fullName.trim().split(' ')[0];  
+  const fullName = studentName.trim();
+  const firstName = fullName ? fullName.split(/\s+/)[0] : 'Siswa';
 
   const menuItems = [
     {
@@ -222,142 +227,28 @@ export default function StudentDashboard({ user, onLogout }) {
   },
   ];
 
-  const saveRefinement = async (original, result) => {
-    setRefinedResult(result);
-    try {
-      await apiRequest('/validasi-spok', {
-        method: 'POST',
-        body: {
-          kalimat_input: original,
-          kalimat_perbaikan: result.corrected,
-          unsur_hilang: result.missingHint || '',
-          status_baku: !result.missingHint,
-        },
-      });
-      setApiError('');
-    } catch (error) {
-      setApiError(`Hasil analisis ditampilkan, tetapi gagal disimpan: ${error.message}`);
-    }
-  };
-
-  // Fungsi Analisis & Koreksi Kalimat Isyarat -> SPOK Baku
   const handleRefineSentence = async () => {
-    const rawInput = signInput.trim() || 'ibu pasar pergi';
-    if (!signInput.trim()) {
-      setSignInput('ibu pasar pergi');
-    }
-
-    const normalized = rawInput.toLowerCase().replace(/[.,!?]/g, '').trim();
-
-    if (normalized === 'ibu pasar pergi') {
-      await saveRefinement(rawInput, {
-        detectedFormat: 'Subjek - Keterangan - Predikat (Non-baku)',
-        missingHint: '! Unsur hilang: Keterangan (ke)',
-        original: rawInput,
-        corrected: 'Ibu pergi ke pasar.',
-        tags: [
-          { label: 'S: Ibu', color: 'bg-[#007EDA]' },
-          { label: 'P: pergi', color: 'bg-[#16A34A]' },
-          { label: 'Preposisi: ke', color: 'bg-[#EA580C]' },
-          { label: 'K.Tempat: pasar', color: 'bg-[#9333EA]' },
-        ],
-        words: ['Ibu', 'pergi', 'ke', 'pasar'],
-      });
+    const rawInput = signInput.trim();
+    if (!rawInput) {
+      setRefinedResult(null);
+      setApiError('Masukkan susunan kata isyarat yang ingin dianalisis.');
       return;
     }
 
-    const places = [
-      'pasar',
-      'sekolah',
-      'rumah',
-      'kantor',
-      'toko',
-      'perpustakaan',
-    ];
-    const foundPlace = places.find((p) => normalized.includes(p));
-    const tokens = rawInput.split(/\s+/);
-
-    if (foundPlace && tokens.length >= 3) {
-      const subject =
-        tokens[0].charAt(0).toUpperCase() + tokens[0].slice(1).toLowerCase();
-      const verb =
-        tokens.find(
-          (t) =>
-            t.toLowerCase() !== tokens[0].toLowerCase() &&
-            t.toLowerCase() !== foundPlace
-        ) || 'pergi';
-      const cleanVerb = verb.toLowerCase();
-      const correctedSentence = `${subject} ${cleanVerb} ke ${foundPlace}.`;
-
-      await saveRefinement(rawInput, {
-        detectedFormat: 'Subjek - Keterangan - Predikat (Non-baku)',
-        missingHint: '! Unsur hilang: Keterangan (ke)',
-        original: rawInput,
-        corrected: correctedSentence,
-        tags: [
-          { label: `S: ${subject}`, color: 'bg-[#007EDA]' },
-          { label: `P: ${cleanVerb}`, color: 'bg-[#16A34A]' },
-          { label: 'Preposisi: ke', color: 'bg-[#EA580C]' },
-          { label: `K.Tempat: ${foundPlace}`, color: 'bg-[#9333EA]' },
-        ],
-        words: [subject, cleanVerb, 'ke', foundPlace],
+    setIsRefining(true);
+    setRefinedResult(null);
+    setApiError('');
+    try {
+      const response = await apiRequest('/validasi-spok', {
+        method: 'POST',
+        body: { kalimat_input: rawInput },
       });
-      return;
+      setRefinedResult(response.analysis);
+    } catch (error) {
+      setApiError(`Gagal menganalisis kalimat: ${error.message}`);
+    } finally {
+      setIsRefining(false);
     }
-
-    if (tokens.length === 3) {
-      const s =
-        tokens[0].charAt(0).toUpperCase() + tokens[0].slice(1).toLowerCase();
-      const o = tokens[1].toLowerCase();
-      const pRaw = tokens[2].toLowerCase();
-      const p = pRaw.startsWith('me') ? pRaw : `mem${pRaw}`;
-      const correctedSentence = `${s} ${p} ${o}.`;
-
-      await saveRefinement(rawInput, {
-        detectedFormat: 'Subjek - Objek - Predikat (Non-baku)',
-        missingHint: '! Perbaikan urutan & imbuhan Predikat',
-        original: rawInput,
-        corrected: correctedSentence,
-        tags: [
-          { label: `S: ${s}`, color: 'bg-[#007EDA]' },
-          { label: `P: ${p}`, color: 'bg-[#16A34A]' },
-          { label: `O: ${o}`, color: 'bg-[#EA580C]' },
-        ],
-        words: [s, p, o],
-      });
-      return;
-    }
-
-    const capitalizedWords = tokens.map((w, idx) =>
-      idx === 0
-        ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-        : w.toLowerCase()
-    );
-    const finalSentence = `${capitalizedWords.join(' ')}.`;
-
-    await saveRefinement(rawInput, {
-      detectedFormat: 'Susunan Isyarat Dasar (Disesuaikan ke SPOK)',
-      missingHint: '! Penyesuaian ejaan & tanda baca baku',
-      original: rawInput,
-      corrected: finalSentence,
-      tags: [
-        ...(capitalizedWords[0]
-          ? [{ label: `S: ${capitalizedWords[0]}`, color: 'bg-[#007EDA]' }]
-          : []),
-        ...(capitalizedWords[1]
-          ? [{ label: `P: ${capitalizedWords[1]}`, color: 'bg-[#16A34A]' }]
-          : []),
-        ...(capitalizedWords[2]
-          ? [
-              {
-                label: `O/K: ${capitalizedWords.slice(2).join(' ')}`,
-                color: 'bg-[#9333EA]',
-              },
-            ]
-          : []),
-      ],
-      words: capitalizedWords,
-    });
   };
 
   const handleCompleteQuiz = async ({ quizId, score }) => {
@@ -378,12 +269,22 @@ export default function StudentDashboard({ user, onLogout }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#EEF4FF] flex font-sans text-[#102A43]">
+    <div className="min-h-screen min-w-0 bg-[#EEF4FF] flex font-sans text-[#102A43]">
       {/* ================= 1. COLLAPSIBLE SIDEBAR BIRU (#007EDA) ================= */}
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Tutup menu"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-950/40 md:hidden"
+        />
+      )}
       <aside
         className={`${
           isSidebarCollapsed ? 'w-20' : 'w-64'
-        } bg-[#007EDA] text-white flex flex-col justify-between transition-all duration-300 shrink-0 sticky top-0 h-screen z-30 shadow-lg`}
+        } fixed md:sticky top-0 left-0 h-screen z-40 bg-[#007EDA] text-white flex flex-col justify-between transition-all duration-300 shrink-0 shadow-lg ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
       >
         <div className="p-4">
           {/* Logo Area */}
@@ -393,15 +294,32 @@ export default function StudentDashboard({ user, onLogout }) {
             } mb-6`}
           >
             {isSidebarCollapsed ? (
-              <div
-                onClick={() => setIsSidebarCollapsed(false)}
-                title="Buka Menu"
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMenu('beranda');
+                  setIsSidebarCollapsed(false);
+                  setIsMobileMenuOpen(false);
+                }}
+                aria-label="Kembali ke Beranda"
+                title="Kembali ke Beranda"
                 className="w-11 h-11 rounded-2xl bg-white/15 hover:bg-white/25 flex items-center justify-center cursor-pointer transition"
               >
                 <Icon icon="lucide:ear" className="w-6 h-6 text-[#FCD34D]" />
-              </div>
+              </button>
             ) : (
-              <HearoLogo variant="transparent" className="h-9" />
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveMenu('beranda');
+                  setIsMobileMenuOpen(false);
+                }}
+                aria-label="Kembali ke Beranda"
+                title="Kembali ke Beranda"
+                className="cursor-pointer bg-transparent border-0 p-0"
+              >
+                <HearoLogo variant="transparent" className="h-9" />
+              </button>
             )}
           </div>
 
@@ -413,7 +331,10 @@ export default function StudentDashboard({ user, onLogout }) {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveMenu(item.id)}
+                  onClick={() => {
+                    setActiveMenu(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
                   title={isSidebarCollapsed ? item.label : ''}
                   className={`w-full flex items-center ${
                     isSidebarCollapsed
@@ -458,7 +379,13 @@ export default function StudentDashboard({ user, onLogout }) {
 
           <button
             type="button"
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onClick={() => {
+              if (window.innerWidth < 768) {
+                setIsMobileMenuOpen(false);
+              } else {
+                setIsSidebarCollapsed(!isSidebarCollapsed);
+              }
+            }}
             title={isSidebarCollapsed ? 'Buka Menu' : 'Tutup Menu'}
             className={`w-full flex items-center ${
               isSidebarCollapsed
@@ -485,18 +412,27 @@ export default function StudentDashboard({ user, onLogout }) {
       </aside>
 
       {/* ================= 2. KONTEN UTAMA KANAN ================= */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full">
        {/* Top Header Bar */}
-        <header className="bg-white border-b border-slate-200/80 px-6 md:px-8 py-4 flex items-center justify-between gap-4 shrink-0">
+        <header className="bg-white border-b border-slate-200/80 px-3 sm:px-5 md:px-8 py-3 sm:py-4 flex items-center justify-between gap-3 shrink-0">
           {/* Kiri: Judul & Subjudul Halaman */}
-          <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Buka menu"
+              aria-expanded={isMobileMenuOpen}
+              className="md:hidden shrink-0 w-9 h-9 rounded-lg border border-slate-200 text-[#102A43] flex items-center justify-center"
+            >
+              <Icon icon="lucide:menu" className="w-5 h-5" />
+            </button>
             {activeMenu === 'quiz' && (
               <span className="w-1 h-10 rounded-full bg-[#007EDA] shrink-0" />
             )}
 
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2.5">
-                <h1 className="text-lg md:text-xl font-extrabold text-[#102A43] leading-tight">
+                <h1 className="text-base sm:text-lg md:text-xl font-extrabold text-[#102A43] leading-tight truncate">
                   {activeMenu === 'beranda' && 'Beranda'}
                   {activeMenu === 'kamus' && 'Kamus Isyarat'}
                   {activeMenu === 'materi' && 'Materi Belajar'}
@@ -510,7 +446,7 @@ export default function StudentDashboard({ user, onLogout }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="hidden sm:block text-xs text-slate-500 mt-0.5 truncate">
                 {activeMenu === 'beranda' &&
                   'Ringkasan aktivitas belajar dan akses cepat fitur utama'}
                 {activeMenu === 'kamus' &&
@@ -528,14 +464,14 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
 
           {/* Kanan: Badge Role Murid & Profil Siswa */}
-          <div className="flex items-center gap-3.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
             {activeMenu === 'quiz' ? (
-              <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-xs font-extrabold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-[10px] sm:text-xs font-extrabold px-2 sm:px-3.5 py-1.5 rounded-full shadow-2xs">
                 <Icon icon="lucide:graduation-cap" className="w-3.5 h-3.5" />
                 <span>Murid</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-xs font-extrabold px-3.5 py-1.5 rounded-full shadow-2xs">
+              <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-[10px] sm:text-xs font-extrabold px-2 sm:px-3.5 py-1.5 rounded-full shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#102A43]" />
                 <span>MURID</span>
               </span>
@@ -544,7 +480,7 @@ export default function StudentDashboard({ user, onLogout }) {
             <div className="h-6 w-px bg-slate-200 hidden sm:block" />
 
             <div className="flex items-center gap-2.5">
-              <div className="relative w-9 h-9 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] flex items-center justify-center">
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] flex items-center justify-center">
                 <Icon icon="noto:boy-light-skin-tone" className="w-7 h-7" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white absolute -bottom-0.5 -right-0.5" />
               </div>
@@ -565,7 +501,7 @@ export default function StudentDashboard({ user, onLogout }) {
       <main
         className={`flex-1 overflow-y-auto ${
           activeMenu === 'materi' ? 'bg-white' : 'bg-[#F3F7FC]'
-        } p-6 md:p-8`}
+        } p-4 sm:p-6 md:p-8`}
       >
         {apiError && (
           <p role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -646,23 +582,14 @@ export default function StudentDashboard({ user, onLogout }) {
                       </h3>
                       <span className="inline-flex items-center gap-1 bg-[#E0F2FE] border border-[#BAE6FD] text-[#007EDA] text-[11px] font-bold px-3 py-1 rounded-full">
                         <Icon icon="lucide:sparkles" className="w-3 h-3" />
-                        <span>Didukung AI Koreksi SPOK Tunarungu</span>
+                        <span>Analisis Struktur SPOK</span>
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
-                      Ubah susunan kata isyarat menjadi kalimat bahasa Indonesia
-                      yang terstruktur dan baku.
+                      Susun kata sesuai pola SPOK tanpa mengubah kata yang dimasukkan.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-start sm:self-center">
-                    <span className="text-xs text-slate-500 font-medium">
-                      Tingkat Akurasi AI
-                    </span>
-                    <span className="bg-[#DCFCE7] text-[#15803D] text-xs font-extrabold px-2.5 py-1 rounded-md">
-                      98.4% Teruji
-                    </span>
-                  </div>
                 </div>
 
                 <div
@@ -714,7 +641,7 @@ export default function StudentDashboard({ user, onLogout }) {
                           <span className="font-bold text-[#007EDA]">
                             {refinedResult
                               ? refinedResult.detectedFormat
-                              : 'Subjek - Keterangan - Predikat (Non-baku)'}
+                              : 'Belum dianalisis'}
                           </span>
                         </div>
                       </div>
@@ -723,10 +650,11 @@ export default function StudentDashboard({ user, onLogout }) {
                     <button
                       type="button"
                       onClick={handleRefineSentence}
-                      className="w-full py-3.5 bg-[#007EDA] hover:bg-[#0066B2] text-white text-sm font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition active:scale-[0.99] cursor-pointer"
+                      disabled={isRefining}
+                      className="w-full py-3.5 bg-[#007EDA] hover:bg-[#0066B2] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition active:scale-[0.99] cursor-pointer"
                     >
                       <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                      <span>Perbaiki Kalimat</span>
+                      <span>{isRefining ? 'Memproses...' : 'Perbaiki Kalimat'}</span>
                     </button>
                   </div>
 
@@ -734,23 +662,31 @@ export default function StudentDashboard({ user, onLogout }) {
                   {refinedResult && (
                     <div className="bg-[#FEF9C3] border border-[#FDE047] rounded-2xl shadow-xs p-5 md:p-6 flex flex-col justify-between space-y-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="bg-white border border-emerald-400 text-emerald-600 text-xs font-extrabold px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
+                        <span className={`bg-white border text-xs font-extrabold px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs ${
+                          refinedResult.statusBaku
+                            ? 'border-emerald-400 text-emerald-600'
+                            : 'border-sky-400 text-sky-700'
+                        }`}>
                           <Icon
-                            icon="lucide:check"
+                            icon={refinedResult.statusBaku ? 'lucide:check' : 'lucide:arrow-right'}
                             className="w-3.5 h-3.5 stroke-[2.5]"
                           />
-                          <span>Tidak Baku → Baku</span>
+                          <span>
+                            {refinedResult.statusBaku
+                              ? 'Susunan sudah SPOK'
+                              : 'Susunan disesuaikan ke SPOK'}
+                          </span>
                         </span>
 
                         <span className="bg-[#FDE68A] border border-amber-300/80 text-[#92400E] text-xs font-extrabold px-3.5 py-1 rounded-full">
-                          {refinedResult.missingHint}
+                        {refinedResult.message}
                         </span>
                       </div>
 
                       <div className="bg-[#FEFCE8]/90 border border-[#FDE047] rounded-xl p-5 space-y-3">
                         <div className="text-[11px] font-bold tracking-wider uppercase text-slate-500 flex items-center gap-2">
                           <span>INPUT ASLI:</span>
-                          <span className="lowercase font-medium line-through text-slate-400 text-xs">
+                          <span className="font-medium line-through text-slate-400 text-xs">
                             {refinedResult.original}
                           </span>
                         </div>
@@ -763,7 +699,7 @@ export default function StudentDashboard({ user, onLogout }) {
                           {refinedResult.tags.map((tag, idx) => (
                             <span
                               key={idx}
-                              className={`${tag.color} text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-2xs`}
+                              className={`${SPOK_TAG_COLORS[tag.role] || 'bg-slate-500'} text-white text-[11px] font-bold px-2.5 py-1 rounded-md shadow-2xs`}
                             >
                               {tag.label}
                             </span>

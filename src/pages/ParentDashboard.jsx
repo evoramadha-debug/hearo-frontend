@@ -100,6 +100,8 @@ export default function ParentDashboard({ user, onLogout }) {
 
   // State Sidebar & Navigasi (2 menu sesuai desain Orang Tua)
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isSidebarExpanded = sidebarExpanded || isMobileMenuOpen;
   const [activeNav, setActiveNav] = useState('riwayat'); // 'riwayat' | 'profil'
 
   // State Filter Riwayat Nilai Kuis
@@ -245,28 +247,58 @@ export default function ParentDashboard({ user, onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEF4FF] text-[#102A43] flex font-['Montserrat',sans-serif] antialiased">
+    <div className="min-h-screen min-w-0 bg-[#EEF4FF] text-[#102A43] flex font-['Montserrat',sans-serif] antialiased">
       {/* ====================================================================
           SIDEBAR BIRU KIRI (#007EDA)
          ==================================================================== */}
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Tutup menu"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-950/40 md:hidden"
+        />
+      )}
       <aside
-        className={`bg-[#007EDA] text-white flex flex-col justify-between shrink-0 transition-all duration-200 sticky top-0 h-screen z-30 ${
-          sidebarExpanded ? 'w-64 px-4' : 'w-[72px] items-center px-2'
-        } py-5`}
+        className={`fixed md:sticky top-0 left-0 h-screen z-40 bg-[#007EDA] text-white flex flex-col justify-between shrink-0 transition-all duration-200 ${
+          isSidebarExpanded ? 'w-64 px-4' : 'w-[72px] items-center px-2'
+        } py-5 ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
       >
         {/* Bagian Atas: Logo & 2 Menu Utama */}
         <div className="space-y-6 w-full">
           <div
             className={`flex items-center ${
-              sidebarExpanded ? 'px-2 justify-start' : 'justify-center'
+              isSidebarExpanded ? 'px-2 justify-start' : 'justify-center'
             }`}
           >
-            {sidebarExpanded ? (
-              <HearoLogo variant="transparent" className="h-9" />
+            {isSidebarExpanded ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveNav('riwayat');
+                  setIsMobileMenuOpen(false);
+                }}
+                aria-label="Kembali ke Beranda"
+                title="Kembali ke Beranda"
+                className="cursor-pointer bg-transparent border-0 p-0"
+              >
+                <HearoLogo variant="transparent" className="h-9" />
+              </button>
             ) : (
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveNav('riwayat');
+                  setIsMobileMenuOpen(false);
+                }}
+                aria-label="Kembali ke Beranda"
+                title="Kembali ke Beranda"
+                className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden cursor-pointer"
+              >
                 <HearoLogo variant="icon" className="h-9 w-9" />
-              </div>
+              </button>
             )}
           </div>
 
@@ -277,10 +309,13 @@ export default function ParentDashboard({ user, onLogout }) {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveNav(item.id)}
+                  onClick={() => {
+                    setActiveNav(item.id);
+                    setIsMobileMenuOpen(false);
+                  }}
                   title={item.label}
                   className={`w-full flex items-center ${
-                    sidebarExpanded
+                    isSidebarExpanded
                       ? 'px-4 py-3 gap-3.5 justify-start'
                       : 'w-11 h-11 mx-auto justify-center'
                   } rounded-xl transition cursor-pointer ${
@@ -290,7 +325,7 @@ export default function ParentDashboard({ user, onLogout }) {
                   }`}
                 >
                   <Icon icon={item.icon} className="w-5 h-5 shrink-0" />
-                  {sidebarExpanded && (
+                  {isSidebarExpanded && (
                     <span className="text-xs truncate">{item.label}</span>
                   )}
                 </button>
@@ -306,28 +341,34 @@ export default function ParentDashboard({ user, onLogout }) {
             onClick={() => onLogout?.()}
             title="Keluar"
             className={`w-full flex items-center ${
-              sidebarExpanded
+              isSidebarExpanded
                 ? 'px-4 py-2.5 gap-3.5 justify-start'
                 : 'w-11 h-11 mx-auto justify-center'
             } rounded-xl text-white/95 hover:bg-white/15 transition cursor-pointer`}
           >
             <Icon icon="lucide:log-out" className="w-5 h-5 shrink-0" />
-            {sidebarExpanded && (
+            {isSidebarExpanded && (
               <span className="text-xs font-semibold">Keluar</span>
             )}
           </button>
 
           <button
             type="button"
-            onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            title={sidebarExpanded ? 'Tutup Menu' : 'Perluas Menu'}
+            onClick={() => {
+              if (isMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+              } else {
+                setSidebarExpanded(!sidebarExpanded);
+              }
+            }}
+            title={isSidebarExpanded ? 'Tutup Menu' : 'Perluas Menu'}
             className={`w-full flex items-center ${
-              sidebarExpanded
+              isSidebarExpanded
                 ? 'px-4 py-2.5 justify-between bg-white/15 hover:bg-white/20'
                 : 'w-11 h-10 mx-auto justify-center bg-white/10 hover:bg-white/20'
             } rounded-xl text-white transition cursor-pointer`}
           >
-            {sidebarExpanded ? (
+            {isSidebarExpanded ? (
               <>
                 <span className="inline-flex items-center gap-2 text-xs font-bold">
                   <Icon icon="lucide:chevrons-left" className="w-4 h-4" />
@@ -349,7 +390,21 @@ export default function ParentDashboard({ user, onLogout }) {
           AREA KONTEN UTAMA KANAN
          ==================================================================== */}
       <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-10 py-8 space-y-6">
+        <header className="md:hidden sticky top-0 z-20 bg-white border-b border-slate-200/80 px-4 py-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            aria-label="Buka menu"
+            aria-expanded={isMobileMenuOpen}
+            className="shrink-0 w-9 h-9 rounded-lg border border-slate-200 text-[#102A43] flex items-center justify-center"
+          >
+            <Icon icon="lucide:menu" className="w-5 h-5" />
+          </button>
+          <h1 className="text-sm font-extrabold text-[#102A43]">
+            {navItems.find((item) => item.id === activeNav)?.label}
+          </h1>
+        </header>
+        <main className="max-w-6xl w-full mx-auto px-4 sm:px-5 md:px-10 py-5 sm:py-8 space-y-6">
           {apiError && (
             <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               {apiError}

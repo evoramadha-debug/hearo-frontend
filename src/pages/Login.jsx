@@ -52,14 +52,14 @@ export default function Login({
   };
 
   return (
-    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-6 md:p-10 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans relative overflow-hidden">
       {/* ================= 1. TOP BAR (LOGO TRANSPARAN & BADGE KANAN) ================= */}
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center z-10">
         <button
           type="button"
           onClick={onNavigateToLanding}
           title="Kembali ke Beranda"
-          className="focus:outline-none hover:opacity-90 transition origin-left scale-125 md:scale-150 cursor-pointer"
+          className="focus:outline-none hover:opacity-90 transition origin-left scale-100 sm:scale-125 md:scale-150 cursor-pointer"
         >
           <HearoLogo variant="transparent" className="h-12" />
         </button>
@@ -71,7 +71,7 @@ export default function Login({
       </div>
 
       {/* ================= 2. GLASSMORPHISM LOGIN CARD ================= */}
-      <div className="w-full max-w-[540px] mx-auto my-8 bg-white/25 backdrop-blur-md border border-white/40 rounded-[32px] p-7 md:p-10 shadow-2xl z-10">
+      <div className="w-full max-w-[540px] mx-auto my-6 sm:my-8 bg-white/25 backdrop-blur-md border border-white/40 rounded-[24px] sm:rounded-[32px] p-5 sm:p-7 md:p-10 shadow-2xl z-10">
         {/* Judul & Subjudul */}
         <div className="text-center space-y-1.5 mb-7">
           <h1 className="text-2xl md:text-[28px] font-extrabold text-[#102A43] tracking-tight">
@@ -104,7 +104,7 @@ export default function Login({
             </div>
 
             {/* Grid 3 Kartu Role */}
-            <div className="grid grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
               {roles.map((role) => {
                 const isSelected = selectedRole === role.id;
                 return (
@@ -112,7 +112,7 @@ export default function Login({
                     type="button"
                     key={role.id}
                     onClick={() => setSelectedRole(role.id)}
-                    className={`relative bg-white rounded-2xl p-3 flex flex-col items-center justify-between transition-all duration-200 ${
+                    className={`relative bg-white rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-between transition-all duration-200 ${
                       isSelected
                         ? 'ring-[3px] ring-[#007EDA] shadow-lg scale-[1.02]'
                         : 'border border-transparent opacity-95 hover:opacity-100 hover:shadow-md'
@@ -140,7 +140,7 @@ export default function Login({
 
                     {/* Label Role */}
                     <span
-                      className={`text-[11px] font-extrabold tracking-wide uppercase ${
+                      className={`text-[10px] sm:text-[11px] font-extrabold tracking-wide uppercase text-center ${
                         isSelected ? 'text-[#007EDA]' : 'text-[#102A43]'
                       }`}
                     >

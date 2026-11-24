@@ -132,7 +132,7 @@ export default function Register({
     formData.password !== formData.passwordConfirmation;
 
   return (
-    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-6 md:p-10 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans relative overflow-hidden">
       {/* ================= 1. TOP BAR ================= */}
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center relative z-20">
         <button
@@ -141,7 +141,7 @@ export default function Register({
             if (onNavigateToLanding) onNavigateToLanding();
           }}
           title="Kembali ke Beranda"
-          className="focus:outline-none hover:opacity-90 transition origin-left scale-125 md:scale-150 cursor-pointer pointer-events-auto"
+          className="focus:outline-none hover:opacity-90 transition origin-left scale-100 sm:scale-125 md:scale-150 cursor-pointer pointer-events-auto"
         >
           <div className="pointer-events-none">
             <HearoLogo variant="transparent" className="h-12" />
@@ -157,7 +157,7 @@ export default function Register({
       {/* ================= 2. FORM REGISTER CONTAINER ================= */}
       <div className="w-full max-w-[500px] mx-auto my-6 z-10">
         {/* Pill Selector Role */}
-        <div className="bg-white/20 backdrop-blur-md border border-white/30 p-1.5 rounded-full grid grid-cols-3 gap-2 shadow-sm mb-7">
+        <div className="bg-white/20 backdrop-blur-md border border-white/30 p-1.5 rounded-full grid grid-cols-3 gap-1 sm:gap-2 shadow-sm mb-7">
           {tabs.map((role) => {
             const isSelected = selectedRole === role.id;
             return (
@@ -165,7 +165,7 @@ export default function Register({
                 key={role.id}
                 type="button"
                 onClick={() => setSelectedRole(role.id)}
-                className={`py-2.5 px-3 rounded-full text-[11px] font-extrabold tracking-wide uppercase flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                className={`min-w-0 py-2.5 px-1 sm:px-3 rounded-full text-[9px] sm:text-[11px] font-extrabold tracking-wide uppercase flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer ${
                   isSelected
                     ? 'bg-[#102A43] text-white shadow-md'
                     : 'bg-white text-[#102A43] hover:bg-[#EEF4FF]'

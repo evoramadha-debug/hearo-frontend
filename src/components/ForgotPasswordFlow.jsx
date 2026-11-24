@@ -6,6 +6,7 @@ export default function ForgotPasswordFlow({
   initialEmail = '',
   initialRole = 'Murid',
   onBackToLogin,
+  onNavigateHome,
 }) {
   // Tahapan alur: 'request' | 'email' | 'reset'
   const [step, setStep] = useState('request');
@@ -175,8 +176,15 @@ export default function ForgotPasswordFlow({
           <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
             {/* Header Biru Email */}
             <div className="bg-gradient-to-r from-[#007EDA] to-[#0068B8] px-6 py-4 flex items-center justify-between text-white">
-              <div className="origin-left scale-110 pointer-events-none">
-                <HearoLogo variant="transparent" className="h-9" />
+              <div className="origin-left scale-110">
+                <button
+                  type="button"
+                  onClick={() => onNavigateHome?.()}
+                  aria-label="Kembali ke Beranda"
+                  className="cursor-pointer"
+                >
+                  <HearoLogo variant="transparent" className="h-9" />
+                </button>
               </div>
               <span className="text-[11px] font-bold tracking-widest uppercase text-sky-100">
                 KEAMANAN AKUN
@@ -290,12 +298,13 @@ export default function ForgotPasswordFlow({
   return (
     <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between relative overflow-x-hidden">
       {/* Header Atas (Logo Seragam dengan Halaman Login & Register) */}
-      <header className="w-full max-w-7xl mx-auto px-6 md:px-10 pt-6 md:pt-8 pb-4 flex items-center justify-between">
+      <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-10 pt-5 sm:pt-6 md:pt-8 pb-4 flex items-center justify-between gap-3">
         <button
           type="button"
-          onClick={() => onBackToLogin?.()}
-          title="Kembali ke Log In"
-          className="focus:outline-none hover:opacity-90 transition origin-left scale-125 md:scale-150 cursor-pointer pointer-events-auto"
+          onClick={() => onNavigateHome?.()}
+          title="Kembali ke Beranda"
+          aria-label="Kembali ke Beranda"
+          className="focus:outline-none hover:opacity-90 transition origin-left scale-100 sm:scale-125 md:scale-150 cursor-pointer pointer-events-auto"
         >
           <div className="pointer-events-none">
             <HearoLogo variant="transparent" className="h-12" />
@@ -397,7 +406,7 @@ export default function ForgotPasswordFlow({
                   <label className="block text-center text-[11px] font-extrabold text-[#102A43] mb-2">
                     Pilih Peran Akun
                   </label>
-                  <div className="grid grid-cols-3 gap-2 bg-white/70 p-1.5 rounded-2xl">
+                  <div className="grid grid-cols-3 gap-1 sm:gap-2 bg-white/70 p-1.5 rounded-2xl">
                     {[
                       { id: 'Guru', icon: 'lucide:user-check' },
                       { id: 'Murid', icon: 'lucide:graduation-cap' },
@@ -409,7 +418,7 @@ export default function ForgotPasswordFlow({
                           key={role.id}
                           type="button"
                           onClick={() => setSelectedRole(role.id)}
-                          className={`py-2 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                          className={`min-w-0 py-2 px-1 sm:px-2 rounded-xl text-[10px] sm:text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-center leading-tight transition cursor-pointer ${
                             active
                               ? 'bg-[#0F233C] text-white shadow-xs'
                               : 'text-[#102A43] hover:bg-white/80'

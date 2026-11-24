@@ -6,6 +6,7 @@ import logoIcon from '../assets/logo-icon.svg';
 export default function LandingPage({ onNavigateToLogin, onNavigateToRegister }) {
   const [activeTab, setActiveTab] = useState('SIBI'); // SIBI / BISINDO
   const [activeNav, setActiveNav] = useState('Beranda');
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const sections = [
@@ -50,6 +51,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
   const handleNavClick = (sectionId, navName) => {
     setActiveNav(navName);
+    setIsMobileNavOpen(false);
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -76,15 +78,21 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7FC] text-[#102A43] font-sans antialiased relative">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-[#F4F7FC] text-[#102A43] font-sans antialiased relative">
       
       {/* ================= 1. NAVBAR FIXED ================= */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3.5">
+          <div className="flex flex-wrap justify-between items-center gap-y-2">
           
-          <div className="flex items-center cursor-pointer" onClick={() => handleNavClick('hero', 'Beranda')}>
+          <button
+            type="button"
+            aria-label="Kembali ke Beranda"
+            onClick={() => handleNavClick('hero', 'Beranda')}
+            className="flex items-center cursor-pointer bg-transparent border-0 p-0"
+          >
             <HearoLogo variant="card" />
-          </div>
+          </button>
 
           <nav aria-label="Navigasi utama" className="hidden md:flex items-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
             {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
@@ -103,23 +111,53 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             ))}
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5">
             <button
+              type="button"
+              onClick={() => setIsMobileNavOpen((open) => !open)}
+              aria-label={isMobileNavOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+              aria-expanded={isMobileNavOpen}
+              className="md:hidden w-9 h-9 rounded-full border border-slate-200 text-[#102A43] flex items-center justify-center"
+            >
+              <Icon icon={isMobileNavOpen ? 'lucide:x' : 'lucide:menu'} className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
               onClick={onNavigateToLogin}
-              className="px-5 py-2.5 rounded-full border-2 border-[#007EDA] text-[#007EDA] hover:bg-[#007EDA]/10 text-xs font-bold transition cursor-pointer"
+              className="px-3 sm:px-5 py-2.5 rounded-full border-2 border-[#007EDA] text-[#007EDA] hover:bg-[#007EDA]/10 text-[11px] sm:text-xs font-bold transition cursor-pointer"
             >
               Masuk
             </button>
             <button
+              type="button"
               onClick={onNavigateToRegister}
-              className="px-5 py-2.5 rounded-full bg-[#007EDA] hover:bg-[#0067B8] text-white text-xs font-bold transition shadow-md cursor-pointer"
+              className="px-3 sm:px-5 py-2.5 rounded-full bg-[#007EDA] hover:bg-[#0067B8] text-white text-[11px] sm:text-xs font-bold transition shadow-md cursor-pointer"
             >
               Daftar
             </button>
-            <div className="w-8 h-8 rounded-full bg-[#007EDA] text-white flex items-center justify-center text-sm font-bold shadow-sm">
+            <div className="hidden sm:flex w-8 h-8 rounded-full bg-[#007EDA] text-white items-center justify-center text-sm font-bold shadow-sm">
               <Icon icon="lucide:user" className="w-4 h-4" />
             </div>
           </div>
+          </div>
+          {isMobileNavOpen && (
+            <nav aria-label="Navigasi mobile" className="md:hidden mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+              {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => handleNavClick(item === 'Beranda' ? 'hero' : item.toLowerCase(), item)}
+                  className={`rounded-xl px-3 py-2.5 text-left text-xs font-bold ${
+                    activeNav === item
+                      ? 'bg-[#E0F2FE] text-[#007EDA]'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </nav>
+          )}
         </div>
       </header>
 
@@ -454,13 +492,18 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             <div className="flex flex-col items-center justify-center my-auto space-y-3">
               
               {/* Kotak App Icon (Memanggil logo-icon.svg langsung) */}
-              <div className="w-20 h-20 bg-[#0067B8] rounded-2xl flex items-center justify-center p-3 shadow-lg border border-white/20">
+              <button
+                type="button"
+                aria-label="Kembali ke Beranda"
+                onClick={() => handleNavClick('hero', 'Beranda')}
+                className="w-20 h-20 bg-[#0067B8] rounded-2xl flex items-center justify-center p-3 shadow-lg border border-white/20 cursor-pointer"
+              >
                 <img 
                   src={logoIcon} 
                   alt="Hearo Icon" 
                   className="w-full h-full object-contain"
                 />
-              </div>
+              </button>
               
               {/* Tulisan Hearo Hanya 1 di Bawah Logo */}
               <span className="text-2xl font-black tracking-wide text-white drop-shadow-md">
@@ -667,7 +710,14 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
           <div className="md:col-span-7 flex flex-col items-center md:items-center text-center space-y-5">
             
             {/* Logo Hearo Transparent (Ikon Telinga + Teks Tanpa Background Card) */}
-            <HearoLogo className="h-9" variant="transparent" />
+            <button
+              type="button"
+              aria-label="Kembali ke Beranda"
+              onClick={() => handleNavClick('hero', 'Beranda')}
+              className="cursor-pointer bg-transparent border-0 p-0"
+            >
+              <HearoLogo className="h-9" variant="transparent" />
+            </button>
 
             {/* Deskripsi Misi Hearo */}
             <p className="text-xs md:text-sm text-[#9FB3C8] leading-relaxed max-w-lg font-normal">

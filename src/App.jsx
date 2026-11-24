@@ -106,7 +106,7 @@ function App() {
   return (
     <div>
       {authError && (
-        <div role="alert" className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] max-w-xl rounded-lg bg-rose-100 px-4 py-3 text-sm text-rose-800 shadow-lg">
+        <div role="alert" className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-1.5rem)] sm:w-auto sm:max-w-xl rounded-lg bg-rose-100 px-4 py-3 text-sm text-rose-800 shadow-lg">
           {authError}
           <button type="button" className="ml-3 font-bold" onClick={() => setAuthError('')}>
             Tutup
@@ -140,6 +140,7 @@ function App() {
           initialEmail={resetPrefill.email}
           initialRole={resetPrefill.role}
           onBackToLogin={() => setCurrentPage('login')}
+          onNavigateHome={() => setCurrentPage('landing')}
         />
       )}
 

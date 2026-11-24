@@ -1063,8 +1063,7 @@ export default function StudentDashboard({ user, onLogout }) {
 
       </div>
 
-
-{/* ================= MODAL DETAIL GERAKAN ISYARAT SIBI ================= */}
+      {/* ================= MODAL DETAIL GERAKAN ISYARAT SIBI ================= */}
       {selectedChar && (
         <div
           onClick={() => setSelectedChar(null)}
@@ -1122,6 +1121,7 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

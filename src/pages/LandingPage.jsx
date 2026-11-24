@@ -39,7 +39,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       window.removeEventListener('resize', updateActiveNav);
     };
   }, []);
-  
+
   // State untuk Pop-up Modal Karakter Kamus
   const [selectedCharacter, setSelectedCharacter] = useState(null);
 
@@ -286,18 +286,19 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
       {/* ================= POP-UP MODAL KAMUS ISYARAT FIGMA ================= */}
       {selectedCharacter && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
           onClick={() => setSelectedCharacter(null)}
         >
-          <div 
+          <div
             className="relative max-w-xs md:max-w-sm w-full animate-scaleUp overflow-hidden rounded-[24px] shadow-2xl border-2 border-white bg-white"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedCharacter(null)}
-              className="absolute top-3.5 right-3.5 z-20 w-7 h-7 bg-white/80 hover:bg-white text-slate-700 rounded-full font-extrabold flex items-center justify-center text-xs transition cursor-pointer shadow-md border border-slate-200"
+              className="absolute top-3.5 right-5 z-20 w-9 h-9 bg-white/80 hover:bg-white text-slate-700 rounded-full font-extrabold flex items-center justify-center text-sm transition cursor-pointer shadow-md border border-slate-200"
               title="Tutup"
+              aria-label="Tutup kamus"
             >
               ✕
             </button>

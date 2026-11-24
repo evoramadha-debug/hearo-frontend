@@ -90,12 +90,17 @@ const DEFAULT_CHART_POINTS = [
   { label: 'Kuis 7', score: 0, passed: false },
 ];
 
-export default function StudentRiwayatView({ recentAttempts = [] }) {
+export default function StudentRiwayatView({
+  recentAttempts = [],
+  liveData = false,
+}) {
   const [levelFilter, setLevelFilter] = useState('Semua Level');
   const [selectedReview, setSelectedReview] = useState(null);
 
   // Gabungkan riwayat baru (jika siswa baru saja mengerjakan kuis) dengan data riwayat bawaan
-  const allRows = [...recentAttempts, ...DEFAULT_HISTORY_ROWS];
+  const allRows = liveData
+    ? recentAttempts
+    : [...recentAttempts, ...DEFAULT_HISTORY_ROWS];
 
   const filteredRows = allRows.filter((row) =>
     levelFilter === 'Semua Level' ? true : row.level === levelFilter
@@ -103,30 +108,45 @@ export default function StudentRiwayatView({ recentAttempts = [] }) {
 
   // Hitung statistik dinamis jika ada pengerjaan baru, atau tampilkan nilai bawaan desain UI
   const hasNewAttempts = recentAttempts.length > 0;
-  const averageScore = hasNewAttempts
-    ? Math.round(
-        allRows.reduce((acc, item) => acc + item.score, 0) / allRows.length
-      )
-    : 57;
-  const totalAttempts = 7 + recentAttempts.length;
-  const passedQuizCount = hasNewAttempts
-    ? Math.min(4, 3 + recentAttempts.filter((r) => r.passed).length)
-    : 3;
-  const masteryPercent = hasNewAttempts
-    ? Math.round((passedQuizCount / 4) * 100)
-    : 50;
+  const averageScore = allRows.length
+    ? Math.round(allRows.reduce((acc, item) => acc + item.score, 0) / allRows.length)
+    : 0;
+  const totalAttempts = liveData ? allRows.length : 7 + recentAttempts.length;
+  const passedQuizCount = liveData
+    ? allRows.filter((item) => item.passed).length
+    : hasNewAttempts
+      ? Math.min(4, 3 + recentAttempts.filter((r) => r.passed).length)
+      : 3;
+  const masteryPercent = liveData
+    ? totalAttempts
+      ? Math.round((passedQuizCount / totalAttempts) * 100)
+      : 0
+    : hasNewAttempts
+      ? Math.round((passedQuizCount / 4) * 100)
+      : 50;
 
   // Titik data grafik progres
-  const chartData = hasNewAttempts
-    ? [
+  const chartData = liveData
+    ? recentAttempts.length
+      ? recentAttempts.slice(0, 7).reverse().map((attempt, index) => ({
+          label: `Kuis ${index + 1}`,
+          score: attempt.score,
+          passed: attempt.passed,
+        }))
+      : [
+          { label: 'Mulai', score: 0, passed: false },
+          { label: 'Belum ada data', score: 0, passed: false },
+        ]
+    : hasNewAttempts
+      ? [
         ...DEFAULT_CHART_POINTS.slice(0, 6),
         {
           label: 'Kuis 7',
           score: recentAttempts[0].score,
           passed: recentAttempts[0].passed,
         },
-      ]
-    : DEFAULT_CHART_POINTS;
+        ]
+      : DEFAULT_CHART_POINTS;
 
   // Koordinat SVG untuk grafik area
   const svgWidth = 760;

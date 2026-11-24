@@ -118,6 +118,7 @@ const KATA_TANYA_LIST = [
 
 export default function StudentMateriView({
   materials = INITIAL_MATERI_MODULES,
+  liveData = false,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('default');
@@ -202,6 +203,33 @@ export default function StudentMateriView({
       if (sortBy === 'za') return b.title.localeCompare(a.title);
       return 0;
     });
+
+  if (selectedModule && liveData) {
+    return (
+      <article className="space-y-5 pb-8">
+        <button
+          type="button"
+          onClick={() => setSelectedModule(null)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#007EDA] hover:underline"
+        >
+          <Icon icon="lucide:arrow-left" className="w-4 h-4" />
+          Kembali ke Daftar Materi
+        </button>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#007EDA]">
+            {selectedModule.author}
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold text-[#102A43]">
+            {selectedModule.title}
+          </h2>
+          <p className="mt-2 text-xs text-slate-400">{selectedModule.publishedAt}</p>
+          <p className="mt-6 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+            {selectedModule.description || 'Belum ada deskripsi untuk materi ini.'}
+          </p>
+        </div>
+      </article>
+    );
+  }
 
   // =========================================================================
   // VIEW B: HALAMAN DETAIL MATERI + PENAMPIL DOKUMEN / PDF GURU
@@ -1186,6 +1214,11 @@ export default function StudentMateriView({
           );
         })}
       </div>
+      {filteredModules.length === 0 && (
+        <p className="rounded-xl bg-white px-5 py-8 text-center text-sm text-slate-500">
+          Belum ada materi yang diterbitkan.
+        </p>
+      )}
     </div>
   );
 }

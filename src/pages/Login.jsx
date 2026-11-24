@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
+import { loginUser } from '../services/api';
 
 export default function Login({
   onNavigateToRegister,
@@ -12,6 +13,8 @@ export default function Login({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const roles = [
     {
@@ -34,10 +37,17 @@ export default function Login({
     },
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onLoginSuccess) {
-      onLoginSuccess({ email, role: selectedRole });
+    setIsSubmitting(true);
+    setErrorMessage('');
+    try {
+      const authData = await loginUser(email.trim(), password, selectedRole);
+      onLoginSuccess?.(authData);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -73,6 +83,11 @@ export default function Login({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {errorMessage && (
+            <p role="alert" className="rounded-xl bg-red-100 px-4 py-3 text-xs font-semibold text-red-800">
+              {errorMessage}
+            </p>
+          )}
           {/* Header Pilihan Role + Badge Role Terpilih */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -192,9 +207,10 @@ export default function Login({
           <div className="pt-2 flex justify-center">
             <button
               type="submit"
-              className="w-56 py-3 bg-[#102A43] hover:bg-[#0B1E30] text-white text-xs font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95"
+              disabled={isSubmitting}
+              className="w-56 py-3 bg-[#102A43] hover:bg-[#0B1E30] disabled:opacity-60 text-white text-xs font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95"
             >
-              <span>Log In</span>
+              <span>{isSubmitting ? 'Memeriksa...' : 'Log In'}</span>
               <Icon icon="lucide:arrow-right" className="w-4 h-4" />
             </button>
           </div>

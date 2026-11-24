@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
 import StudentMateriView from '../components/StudentMateriView';
 import StudentQuizView from '../components/StudentQuizView';
 import StudentRiwayatView from '../components/StudentRiwayatView';
 import StudentProfilView from '../components/StudentProfilView';
+import { apiRequest } from '../services/api';
+import {
+  adaptLearningHistory,
+  adaptMaterial,
+  adaptQuiz,
+} from '../services/adapters';
 
 const sibiAssets = import.meta.glob('../assets/sibi/*.png', {
   eager: true,
@@ -61,6 +67,64 @@ const SIBI_DESCRIPTIONS = {
 export default function StudentDashboard({ user, onLogout }) {
   const [activeMenu, setActiveMenu] = useState('beranda');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [materials, setMaterials] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
+  const [learningHistory, setLearningHistory] = useState([]);
+  const [dictionaryEntries, setDictionaryEntries] = useState([]);
+  const [connectedParents, setConnectedParents] = useState([]);
+  const [apiError, setApiError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      apiRequest('/materi'),
+      apiRequest('/kuis'),
+      apiRequest('/riwayat-belajar'),
+      apiRequest('/kamus'),
+      apiRequest('/siswa/orang-tua'),
+    ])
+      .then(([materiResponse, quizResponse, historyResponse, dictionaryResponse, parentResponse]) => {
+        if (!active) return;
+        setMaterials((materiResponse.data || []).map(adaptMaterial));
+        const history = (historyResponse.data || []).map(adaptLearningHistory);
+        const latestScoreByQuiz = new Map();
+        history.forEach((attempt) => {
+          if (!latestScoreByQuiz.has(attempt.quizId)) {
+            latestScoreByQuiz.set(attempt.quizId, attempt);
+          }
+        });
+        setQuizzes(
+          (quizResponse.data || [])
+            .map(adaptQuiz)
+            .filter((quiz) => quiz.questions.length > 0)
+            .map((quiz) => {
+              const latestAttempt = latestScoreByQuiz.get(quiz.id);
+              return latestAttempt
+                ? {
+                    ...quiz,
+                    lastScore: latestAttempt.score,
+                    status: latestAttempt.passed ? 'passed' : 'attempted',
+                  }
+                : quiz;
+            })
+        );
+        setLearningHistory(history);
+        setDictionaryEntries(dictionaryResponse.data || []);
+        setConnectedParents((parentResponse.data || []).map((parent) => ({
+          id: parent.id_orang_tua,
+          name: parent.nama,
+          email: parent.email,
+          phone: parent.no_telepon || '',
+        })));
+      })
+      .catch((error) => {
+        if (active) setApiError(`Gagal memuat data belajar: ${error.message}`);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // State interaktif untuk Hearo Refine Studio (Koreksi SPOK)
   const [signInput, setSignInput] = useState('');
@@ -123,20 +187,6 @@ export default function StudentDashboard({ user, onLogout }) {
     },
   ];
 
-  const currentMenuObj =
-    menuItems.find((item) => item.id === activeMenu) || menuItems[0];
-
-  const allSibiChars = [...SIBI_LETTERS, ...SIBI_NUMBERS];
-
-  const handleNavigateChar = (direction) => {
-    if (!selectedChar) return;
-    const currentIndex = allSibiChars.indexOf(selectedChar);
-    if (currentIndex === -1) return;
-    const nextIndex =
-      (currentIndex + direction + allSibiChars.length) % allSibiChars.length;
-    setSelectedChar(allSibiChars[nextIndex]);
-  };
-
   const learningModules = [
     {
       id: 'kamus',
@@ -172,8 +222,26 @@ export default function StudentDashboard({ user, onLogout }) {
   },
   ];
 
+  const saveRefinement = async (original, result) => {
+    setRefinedResult(result);
+    try {
+      await apiRequest('/validasi-spok', {
+        method: 'POST',
+        body: {
+          kalimat_input: original,
+          kalimat_perbaikan: result.corrected,
+          unsur_hilang: result.missingHint || '',
+          status_baku: !result.missingHint,
+        },
+      });
+      setApiError('');
+    } catch (error) {
+      setApiError(`Hasil analisis ditampilkan, tetapi gagal disimpan: ${error.message}`);
+    }
+  };
+
   // Fungsi Analisis & Koreksi Kalimat Isyarat -> SPOK Baku
-  const handleRefineSentence = () => {
+  const handleRefineSentence = async () => {
     const rawInput = signInput.trim() || 'ibu pasar pergi';
     if (!signInput.trim()) {
       setSignInput('ibu pasar pergi');
@@ -182,7 +250,7 @@ export default function StudentDashboard({ user, onLogout }) {
     const normalized = rawInput.toLowerCase().replace(/[.,!?]/g, '').trim();
 
     if (normalized === 'ibu pasar pergi') {
-      setRefinedResult({
+      await saveRefinement(rawInput, {
         detectedFormat: 'Subjek - Keterangan - Predikat (Non-baku)',
         missingHint: '! Unsur hilang: Keterangan (ke)',
         original: rawInput,
@@ -221,7 +289,7 @@ export default function StudentDashboard({ user, onLogout }) {
       const cleanVerb = verb.toLowerCase();
       const correctedSentence = `${subject} ${cleanVerb} ke ${foundPlace}.`;
 
-      setRefinedResult({
+      await saveRefinement(rawInput, {
         detectedFormat: 'Subjek - Keterangan - Predikat (Non-baku)',
         missingHint: '! Unsur hilang: Keterangan (ke)',
         original: rawInput,
@@ -245,7 +313,7 @@ export default function StudentDashboard({ user, onLogout }) {
       const p = pRaw.startsWith('me') ? pRaw : `mem${pRaw}`;
       const correctedSentence = `${s} ${p} ${o}.`;
 
-      setRefinedResult({
+      await saveRefinement(rawInput, {
         detectedFormat: 'Subjek - Objek - Predikat (Non-baku)',
         missingHint: '! Perbaikan urutan & imbuhan Predikat',
         original: rawInput,
@@ -267,7 +335,7 @@ export default function StudentDashboard({ user, onLogout }) {
     );
     const finalSentence = `${capitalizedWords.join(' ')}.`;
 
-    setRefinedResult({
+    await saveRefinement(rawInput, {
       detectedFormat: 'Susunan Isyarat Dasar (Disesuaikan ke SPOK)',
       missingHint: '! Penyesuaian ejaan & tanda baca baku',
       original: rawInput,
@@ -291,6 +359,23 @@ export default function StudentDashboard({ user, onLogout }) {
       words: capitalizedWords,
     });
   };
+
+  const handleCompleteQuiz = async ({ quizId, score }) => {
+    const response = await apiRequest('/riwayat-belajar', {
+      method: 'POST',
+      body: { id_kuis: quizId, skor: score },
+    });
+    setLearningHistory((current) => [
+      adaptLearningHistory(response.data),
+      ...current,
+    ]);
+  };
+
+  const selectedDictionaryEntry = dictionaryEntries.find(
+    (entry) =>
+      entry.karakter?.toUpperCase() === selectedChar?.toUpperCase() &&
+      entry.jenis_bahasa === dictionaryType
+  );
 
   return (
     <div className="min-h-screen bg-[#EEF4FF] flex font-sans text-[#102A43]">
@@ -482,6 +567,11 @@ export default function StudentDashboard({ user, onLogout }) {
           activeMenu === 'materi' ? 'bg-white' : 'bg-[#F3F7FC]'
         } p-6 md:p-8`}
       >
+        {apiError && (
+          <p role="alert" className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {apiError}
+          </p>
+        )}
         {activeMenu === 'beranda' && (
           <>
            {/* -------- SECTION A: BANNER SAPAAN & CAPAIAN MINGGUAN -------- */}
@@ -1001,17 +1091,26 @@ export default function StudentDashboard({ user, onLogout }) {
           {/* ================================================================= */}
           {/* MENU 3: MATERI BELAJAR (DINAMIS DARI UPLOAD GURU)                 */}
           {/* ================================================================= */}
-          {activeMenu === 'materi' && <StudentMateriView />}
+          {activeMenu === 'materi' && (
+            <StudentMateriView materials={materials} liveData />
+          )}
 
           {/* ================================================================= */}
           {/* MENU 4: ARENA QUIZ                                                */}
           {/* ================================================================= */}
-          {activeMenu === 'quiz' && <StudentQuizView />}
+          {activeMenu === 'quiz' && (
+            <StudentQuizView
+              initialQuizzes={quizzes}
+              onComplete={handleCompleteQuiz}
+            />
+          )}
 
           {/* ================================================================= */}
           {/* MENU 5: RIWAYAT BELAJAR                                           */}
           {/* ================================================================= */}
-          {activeMenu === 'riwayat' && <StudentRiwayatView />}
+          {activeMenu === 'riwayat' && (
+            <StudentRiwayatView recentAttempts={learningHistory} liveData />
+          )}
 
           {/* ================================================================= */}
           {/* MENU 6: PENGATURAN & PROFIL                                       */}
@@ -1019,6 +1118,7 @@ export default function StudentDashboard({ user, onLogout }) {
           {activeMenu === 'pengaturan' && (
             <StudentProfilView
               user={{ ...user, name: studentName }}
+              connectedParents={connectedParents}
               onUpdateProfile={(updated) => setStudentName(updated.fullName)}
             />
           )}
@@ -1063,7 +1163,7 @@ export default function StudentDashboard({ user, onLogout }) {
             {/* Kotak Ilustrasi Tangan + Badge Tampak Depan */}
             <div className="bg-[#EEF4FF] rounded-2xl p-6 relative flex items-center justify-center min-h-[240px]">
               <img
-                src={getSibiImageSrc(selectedChar)}
+                src={selectedDictionaryEntry?.media_url || getSibiImageSrc(selectedChar)}
                 alt={`Isyarat ${selectedChar} - ${dictionaryType}`}
                 className="max-h-48 w-auto object-contain"
               />
@@ -1079,7 +1179,7 @@ export default function StudentDashboard({ user, onLogout }) {
                 PETUNJUK GERAKAN VISUAL:
               </div>
               <p className="text-xs md:text-sm text-[#102A43] leading-relaxed">
-                {SIBI_DESCRIPTIONS[selectedChar] ||
+                {selectedDictionaryEntry?.deskripsi || SIBI_DESCRIPTIONS[selectedChar] ||
                   'Peragakan posisi jari sesuai standar Sistem Isyarat Bahasa Indonesia (SIBI).'}
               </p>
             </div>

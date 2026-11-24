@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
+import { apiRequest } from '../services/api';
+import { adaptMaterial } from '../services/adapters';
 
 // ============================================================================
 // DATA AWAL (DUMMY STATE UNTUK SIMULASI INTERAKTIF FRONTEND)
@@ -232,17 +234,76 @@ const CHART_DATA = [
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const NUMBERS = '0123456789'.split('');
 
+const mapTeacherMaterial = (material) => {
+  const adapted = adaptMaterial(material);
+  const timestamp = material.created_at ? new Date(material.created_at).getTime() : 0;
+  return {
+    ...adapted,
+    category: 'Materi pembelajaran',
+    date: adapted.publishedAt,
+    timestamp: Number.isNaN(timestamp) ? 0 : timestamp,
+  };
+};
+
+const mapTeacherQuiz = (quiz) => ({
+  id: quiz.id_kuis,
+  id_materi: quiz.id_materi,
+  title: quiz.judul,
+  material: `Materi: ${quiz.materi?.judul || 'Materi pembelajaran'}`,
+  passingScore: quiz.skor_lulus,
+});
+
+const mapTeacherResult = (result) => {
+  const score = Number(result.skor) || 0;
+  const passScore = Number(result.kuis?.skor_lulus) || 0;
+  const studentName = result.siswa?.nama || 'Siswa';
+  return {
+    id: result.id_riwayat || result.id,
+    studentId: result.siswa?.id_siswa,
+    initials: studentName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+    avatarBg: score >= passScore ? 'bg-[#007EDA]' : 'bg-[#DC2626]',
+    name: studentName,
+    nisn: result.siswa?.nisn || '',
+    kelas: result.siswa?.kelas || '',
+    quizTitle: result.kuis?.judul || 'Kuis',
+    subTag: '',
+    level: '',
+    topic: '',
+    score,
+    status: score >= passScore ? 'LULUS' : 'REMIDIAL',
+    date: result.tanggal_pengerjaan
+      ? new Date(result.tanggal_pengerjaan).toLocaleString('id-ID')
+      : '',
+    note: '',
+  };
+};
+
+const mapLinkRequest = (request) => ({
+  id: request.id_link_request,
+  initials: (request.siswa?.nama || 'Siswa').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+  name: request.siswa?.nama || '',
+  nisn: request.siswa?.nisn || '',
+  kelas: request.siswa?.kelas ? `Kelas ${request.siswa.kelas}` : '',
+  email: '',
+  parentName: request.orang_tua?.nama || '',
+  parentEmail: request.orang_tua?.email || '',
+  status: request.status === 'approved'
+    ? 'CONNECTED'
+    : request.status === 'pending'
+      ? 'PENDING'
+      : 'UNLINKED',
+});
+
 export default function TeacherDashboard({ user, onLogout }) {
   // State Profil Guru (dapat diperbarui langsung lewat menu Pengaturan & Profil)
   const [teacherProfile, setTeacherProfile] = useState({
-    fullName: user?.fullName || user?.name || 'Dimas Prasetyo',
-    email: user?.email || 'dimas.prasetyo@gmail.com',
-    nip: user?.nip || '198904152019031008',
-    phone: user?.phone || '083181836100',
-    school: user?.school || 'SLB Negeri 1 Bandar Lampung',
-    homeroomClass: user?.homeroomClass || 'Kelas 10-A',
-    specialization: user?.specialization || 'Bahasa Indonesia & Isyarat (SIBI/BISINDO)',
-    joinedDate: '12 Nov 2026',
+    fullName: user?.fullName || user?.name || '',
+    email: user?.email || '',
+    nip: user?.nip || '',
+    phone: user?.phone || '',
+    joinedDate: user?.created_at
+      ? new Date(user.created_at).toLocaleDateString('id-ID')
+      : '',
   });
 
   const firstName = teacherProfile.fullName
@@ -263,6 +324,7 @@ export default function TeacherDashboard({ user, onLogout }) {
 
   // Toast Notifikasi Global
   const [toastMessage, setToastMessage] = useState('');
+  const [apiError, setApiError] = useState('');
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 3500);
@@ -271,7 +333,7 @@ export default function TeacherDashboard({ user, onLogout }) {
   // State Beranda (Hearo Refine Studio & Tabel Hasil Kuis)
   const [signInput, setSignInput] = useState('');
   const [refinedResult, setRefinedResult] = useState(null);
-  const [quizResults, setQuizResults] = useState(INITIAL_QUIZ_RESULTS);
+  const [quizResults, setQuizResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('SEMUA');
   const [selectedSemester, setSelectedSemester] = useState(
@@ -283,29 +345,29 @@ export default function TeacherDashboard({ user, onLogout }) {
   // State Kamus Bahasa Isyarat
   const [signMode, setSignMode] = useState('SIBI'); // 'SIBI' | 'BISINDO'
   const [selectedChar, setSelectedChar] = useState(null);
+  const [dictionaryEntries, setDictionaryEntries] = useState([]);
 
   // State Materi Belajar
-  const [materials, setMaterials] = useState(INITIAL_MATERIALS);
+  const [materials, setMaterials] = useState([]);
   const [materialSearch, setMaterialSearch] = useState('');
   const [materialSort, setMaterialSort] = useState('terbaru');
   const [materialModal, setMaterialModal] = useState(null); // { mode: 'add' | 'edit', item?: object }
-  const [materialForm, setMaterialForm] = useState({
-    title: '',
-    category: 'SIBI & BISINDO Dasar',
-  });
+  const [materialForm, setMaterialForm] = useState({ title: '', description: '' });
 
   // State Arena Kuis
-  const [quizzes, setQuizzes] = useState(INITIAL_QUIZZES);
+  const [quizzes, setQuizzes] = useState([]);
   const [showAddQuizModal, setShowAddQuizModal] = useState(false);
   const [quizForm, setQuizForm] = useState({
     title: '',
-    material: 'Materi: Struktur Kalimat SPOK',
+    materialId: '',
     passingScore: 75,
+    questionPrompt: '',
+    correctSentence: '',
   });
 
   // State Hubungkan (Data Siswa & Orang Tua)
-  const [connections, setConnections] = useState(INITIAL_CONNECTIONS);
-  const [classFilter, setClassFilter] = useState('Kelas 10-A');
+  const [connections, setConnections] = useState([]);
+  const [classFilter, setClassFilter] = useState('Semua Kelas');
   const [linkStatusFilter, setLinkStatusFilter] = useState(
     'Semua Status Hubungan'
   );
@@ -327,6 +389,32 @@ export default function TeacherDashboard({ user, onLogout }) {
     new: false,
     confirm: false,
   });
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      apiRequest('/materi'),
+      apiRequest('/kuis'),
+      apiRequest('/guru/link-requests'),
+      apiRequest('/guru/riwayat-murid'),
+      apiRequest('/kamus'),
+    ])
+      .then(([materialsResponse, quizzesResponse, linksResponse, historyResponse, dictionaryResponse]) => {
+        if (!active) return;
+        setMaterials((materialsResponse.data || []).map(mapTeacherMaterial));
+        setQuizzes((quizzesResponse.data || []).map(mapTeacherQuiz));
+        setConnections((linksResponse.data || []).map(mapLinkRequest));
+        setQuizResults((historyResponse.data || []).map(mapTeacherResult));
+        setDictionaryEntries(dictionaryResponse.data || []);
+      })
+      .catch((error) => {
+        if (active) setApiError(`Gagal memuat data guru: ${error.message}`);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Daftar Menu Sidebar (persis sesuai desain expanded sidebar)
   const navItems = [
@@ -378,23 +466,26 @@ export default function TeacherDashboard({ user, onLogout }) {
   // ==========================================================================
   // HANDLERS BERANDA
   // ==========================================================================
-  const handleRefineSentence = () => {
+  const handleRefineSentence = async () => {
     const raw = signInput.trim();
     if (!raw) {
-      setRefinedResult({
-        input: 'SAYA KEMARIN SEKOLAH PERGI',
-        output: 'Kemarin saya pergi ke sekolah.',
-        pattern: 'Keterangan (K) + Subjek (S) + Predikat (P) + Keterangan (K)',
-      });
+      setApiError('Masukkan kalimat sebelum menjalankan Hearo Refine.');
       return;
     }
-    const normalized =
-      raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    setRefinedResult({
-      input: raw.toUpperCase(),
-      output: normalized.endsWith('.') ? normalized : `${normalized}.`,
-      pattern: 'Subjek (S) + Predikat (P) + Objek (O) + Keterangan (K)',
-    });
+    try {
+      const response = await apiRequest('/translate', {
+        method: 'POST',
+        body: { teks: raw },
+      });
+      setRefinedResult({
+        input: response.data.teks_input,
+        output: response.data.hasil_translate,
+        pattern: 'Hasil simulasi dari layanan backend.',
+      });
+      setApiError('');
+    } catch (error) {
+      setApiError(`Hearo Refine gagal: ${error.message}`);
+    }
   };
 
   const filteredResults = quizResults.filter((item) => {
@@ -446,77 +537,117 @@ export default function TeacherDashboard({ user, onLogout }) {
     );
 
   const openAddMaterial = () => {
-    setMaterialForm({ title: '', category: 'SIBI & BISINDO Dasar' });
+    setMaterialForm({ title: '', description: '' });
     setMaterialModal({ mode: 'add' });
   };
 
   const openEditMaterial = (item) => {
-    setMaterialForm({ title: item.title, category: item.category });
+    setMaterialForm({ title: item.title, description: item.description });
     setMaterialModal({ mode: 'edit', item });
   };
 
-  const handleSaveMaterial = (e) => {
+  const handleSaveMaterial = async (e) => {
     e.preventDefault();
-    if (!materialForm.title.trim()) return;
-    if (materialModal?.mode === 'add') {
-      const newMat = {
-        id: Date.now(),
-        title: materialForm.title.trim(),
-        date: '24 Nov 2026',
-        timestamp: materials.length + 10,
-        category: materialForm.category,
-      };
-      setMaterials([newMat, ...materials]);
-      showToast('Materi pembelajaran baru berhasil diunggah.');
-    } else if (materialModal?.mode === 'edit' && materialModal.item) {
-      setMaterials((prev) =>
-        prev.map((m) =>
-          m.id === materialModal.item.id
-            ? {
-                ...m,
-                title: materialForm.title.trim(),
-                category: materialForm.category,
-              }
-            : m
-        )
+    if (!materialForm.title.trim() || !materialForm.description.trim()) return;
+    try {
+      const isEditing = materialModal?.mode === 'edit' && materialModal.item;
+      const response = await apiRequest(
+        isEditing ? `/materi/${materialModal.item.id}` : '/materi',
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          body: {
+            judul: materialForm.title.trim(),
+            deskripsi: materialForm.description.trim(),
+          },
+        }
       );
-      showToast('Perubahan materi berhasil disimpan.');
+      const savedMaterial = mapTeacherMaterial(response.data);
+      setMaterials((current) =>
+        isEditing
+          ? current.map((item) => item.id === savedMaterial.id ? savedMaterial : item)
+          : [savedMaterial, ...current]
+      );
+      showToast(isEditing ? 'Perubahan materi berhasil disimpan.' : 'Materi pembelajaran berhasil ditambahkan.');
+      setMaterialModal(null);
+    } catch (error) {
+      setApiError(`Materi gagal disimpan: ${error.message}`);
     }
-    setMaterialModal(null);
   };
 
-  const handleDeleteMaterial = (id, title) => {
-    setMaterials((prev) => prev.filter((m) => m.id !== id));
-    showToast(`Materi "${title}" dihapus.`);
+  const handleDeleteMaterial = async (id, title) => {
+    try {
+      await apiRequest(`/materi/${id}`, { method: 'DELETE' });
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
+      setQuizzes((prev) => prev.filter((quiz) => quiz.id_materi !== id));
+      showToast(`Materi "${title}" dihapus.`);
+    } catch (error) {
+      setApiError(`Materi gagal dihapus: ${error.message}`);
+    }
   };
 
   // ==========================================================================
   // HANDLERS ARENA KUIS
   // ==========================================================================
-  const handleAddQuiz = (e) => {
+  const handleAddQuiz = async (e) => {
     e.preventDefault();
-    if (!quizForm.title.trim()) return;
-    const newQuiz = {
-      id: Date.now(),
-      title: quizForm.title.trim(),
-      material: quizForm.material.startsWith('Materi:')
-        ? quizForm.material
-        : `Materi: ${quizForm.material}`,
-      passingScore: Number(quizForm.passingScore) || 70,
-    };
-    setQuizzes([newQuiz, ...quizzes]);
-    setQuizForm({
-      title: '',
-      material: 'Materi: Struktur Kalimat SPOK',
-      passingScore: 75,
-    });
-    setShowAddQuizModal(false);
-    showToast('Kuis evaluasi baru berhasil ditambahkan.');
+    if (!quizForm.title.trim() || !quizForm.materialId) {
+      setApiError('Pilih materi untuk kuis ini.');
+      return;
+    }
+    const words = quizForm.correctSentence.trim().split(/\s+/).filter(Boolean);
+    if (words.length < 2 || !quizForm.questionPrompt.trim()) {
+      setApiError('Isi instruksi soal dan jawaban berupa kalimat minimal dua kata.');
+      return;
+    }
+    try {
+      const response = await apiRequest('/kuis', {
+        method: 'POST',
+        body: {
+          id_materi: Number(quizForm.materialId),
+          judul: quizForm.title.trim(),
+          skor_lulus: Number(quizForm.passingScore),
+          soal: [{
+            instruksi: quizForm.questionPrompt.trim(),
+            kalimat_benar: quizForm.correctSentence.trim(),
+            kata_soal: words,
+          }],
+        },
+      });
+      setQuizzes((current) => [mapTeacherQuiz(response.data), ...current]);
+      setQuizForm({
+        title: '',
+        materialId: materials[0]?.id || '',
+        passingScore: 75,
+        questionPrompt: '',
+        correctSentence: '',
+      });
+      setShowAddQuizModal(false);
+      setApiError('');
+      showToast('Kuis evaluasi berhasil ditambahkan.');
+    } catch (error) {
+      setApiError(`Kuis gagal disimpan: ${error.message}`);
+    }
   };
 
-  const handleDeleteQuiz = (id, title) => {
-    setQuizzes((prev) => prev.filter((q) => q.id !== id));
-    showToast(`Kuis "${title}" telah dihapus.`);
+  const handleDeleteQuiz = async (id, title) => {
+    try {
+      await apiRequest(`/kuis/${id}`, { method: 'DELETE' });
+      setQuizzes((prev) => prev.filter((q) => q.id !== id));
+      showToast(`Kuis "${title}" telah dihapus.`);
+    } catch (error) {
+      setApiError(`Kuis gagal dihapus: ${error.message}`);
+    }
+  };
+
+  const openAddQuiz = () => {
+    setQuizForm({
+      title: '',
+      materialId: materials[0] ? String(materials[0].id) : '',
+      passingScore: 75,
+      questionPrompt: '',
+      correctSentence: '',
+    });
+    setShowAddQuizModal(true);
   };
 
   // ==========================================================================
@@ -538,24 +669,79 @@ export default function TeacherDashboard({ user, onLogout }) {
     return matchClass && matchStatus && matchQuery;
   });
 
-  const handleApproveParent = (id) => {
-    setConnections((prev) =>
-      prev.map((row) =>
-        row.id === id ? { ...row, status: 'CONNECTED' } : row
-      )
+  const studentSummaries = Array.from(
+    quizResults.reduce((students, result) => {
+      const key = result.studentId || result.name;
+      const summary = students.get(key) || {
+        id: key,
+        initials: result.initials,
+        name: result.name,
+        nisn: result.nisn,
+        kelas: result.kelas,
+        scores: [],
+        lastQuiz: result.quizTitle,
+      };
+      summary.scores.push(result.score);
+      students.set(key, summary);
+      return students;
+    }, new Map()).values()
+  ).map((student) => {
+    const avgScore = Math.round(
+      student.scores.reduce((total, score) => total + score, 0) /
+        student.scores.length
     );
-    showToast('Permintaan tautan akun orang tua disetujui.');
+    return {
+      ...student,
+      avgScore,
+      progress: avgScore,
+    };
+  });
+
+  const classScores = quizResults.reduce((classes, result) => {
+    if (!result.kelas) return classes;
+    classes[result.kelas] ||= [];
+    classes[result.kelas].push(result.score);
+    return classes;
+  }, {});
+  const classChartData = Object.entries(classScores).map(([kelas, scores], index) => ({
+    kelas,
+    nilai: Math.round(scores.reduce((total, score) => total + score, 0) / scores.length),
+    barColor: ['bg-[#007EDA]', 'bg-[#004C8C]', 'bg-[#FCD34D]'][index % 3],
+  }));
+  const passRate = quizResults.length
+    ? Math.round((quizResults.filter((result) => result.status === 'LULUS').length / quizResults.length) * 100)
+    : 0;
+  const pendingLinkCount = connections.filter((connection) => connection.status === 'PENDING').length;
+  const selectedDictionaryEntry = dictionaryEntries.find(
+    (entry) =>
+      entry.karakter?.toUpperCase() === selectedChar?.toUpperCase() &&
+      entry.jenis_bahasa === signMode
+  );
+
+  const handleApproveParent = async (id) => {
+    try {
+      await apiRequest(`/guru/link-requests/${id}/approve`, { method: 'POST', body: {} });
+      setConnections((prev) =>
+        prev.map((row) => row.id === id ? { ...row, status: 'CONNECTED' } : row)
+      );
+      showToast('Permintaan tautan akun orang tua disetujui.');
+    } catch (error) {
+      setApiError(`Permintaan tautan gagal disetujui: ${error.message}`);
+    }
   };
 
-  const handleRejectParent = (id) => {
-    setConnections((prev) =>
-      prev.map((row) =>
-        row.id === id
-          ? { ...row, status: 'UNLINKED', parentName: '', parentEmail: '' }
-          : row
-      )
-    );
-    showToast('Permintaan tautan akun orang tua ditolak.');
+  const handleRejectParent = async (id) => {
+    try {
+      await apiRequest(`/guru/link-requests/${id}/reject`, { method: 'POST', body: {} });
+      setConnections((prev) =>
+        prev.map((row) =>
+          row.id === id ? { ...row, status: 'UNLINKED', parentName: '', parentEmail: '' } : row
+        )
+      );
+      showToast('Permintaan tautan akun orang tua ditolak.');
+    } catch (error) {
+      setApiError(`Permintaan tautan gagal ditolak: ${error.message}`);
+    }
   };
 
   const openConnectModal = (mode, student) => {
@@ -566,36 +752,39 @@ export default function TeacherDashboard({ user, onLogout }) {
 
   const handleSaveParentConnection = (e) => {
     e.preventDefault();
-    if (!connectModal?.student || !parentNameInput.trim()) return;
-    setConnections((prev) =>
-      prev.map((row) =>
-        row.id === connectModal.student.id
-          ? {
-              ...row,
-              parentName: parentNameInput.trim(),
-              parentEmail:
-                parentEmailInput.trim() || 'wali.murid@gmail.com',
-              status: 'CONNECTED',
-            }
-          : row
-      )
-    );
-    showToast(
-      `Akun orang tua untuk ${connectModal.student.name} berhasil dihubungkan.`
-    );
+    showToast('Orang tua perlu mengajukan tautan dari akunnya; guru dapat menyetujui permintaan yang masuk.');
     setConnectModal(null);
   };
 
   // ==========================================================================
   // HANDLERS PENGATURAN & PROFIL GURU
   // ==========================================================================
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setTeacherProfile({ ...profileForm });
-    showToast('Data profil guru berhasil diperbarui.');
+    try {
+      const response = await apiRequest('/profil', {
+        method: 'PUT',
+        body: {
+          nama: profileForm.fullName.trim(),
+          email: profileForm.email.trim(),
+          no_telepon: profileForm.phone.trim(),
+        },
+      });
+      const updatedProfile = {
+        ...teacherProfile,
+        fullName: response.data.nama,
+        email: response.data.email,
+        phone: response.data.no_telepon,
+      };
+      setTeacherProfile(updatedProfile);
+      setProfileForm((current) => ({ ...current, ...updatedProfile }));
+      showToast('Data profil guru berhasil diperbarui.');
+    } catch (error) {
+      setApiError(`Profil gagal diperbarui: ${error.message}`);
+    }
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     if (
       passwordForm.newPassword.length < 8 ||
@@ -608,12 +797,23 @@ export default function TeacherDashboard({ user, onLogout }) {
       showToast('Konfirmasi password baru tidak cocok.');
       return;
     }
-    setPasswordForm({
-      oldPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-    showToast('Password akun guru berhasil diperbarui.');
+    try {
+      await apiRequest('/password', {
+        method: 'PUT',
+        body: {
+          current_password: passwordForm.oldPassword,
+          new_password: passwordForm.newPassword,
+        },
+      });
+      setPasswordForm({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      showToast('Password akun guru berhasil diperbarui.');
+    } catch (error) {
+      setApiError(`Password gagal diperbarui: ${error.message}`);
+    }
   };
 
   const currentHeader = headerMeta[activeNav] || headerMeta.beranda;
@@ -761,6 +961,14 @@ export default function TeacherDashboard({ user, onLogout }) {
 
         {/* MAIN BODY */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-5 md:px-10 py-7 space-y-6">
+          {apiError && (
+            <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {apiError}
+              <button type="button" className="ml-3 font-bold underline" onClick={() => setApiError('')}>
+                Tutup
+              </button>
+            </p>
+          )}
           {/* Toast Notifikasi */}
           {toastMessage && (
             <div className="bg-[#0F233C] text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-md flex items-center justify-between">
@@ -816,19 +1024,22 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </div>
                     <span className="inline-flex items-center gap-1.5 bg-[#EEF4FF] text-[#007EDA] text-[11px] font-bold px-3 py-1 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#007EDA]"></span>
-                      <span>Aktif Semua</span>
+                      <span>Hasil kuis</span>
                     </span>
                   </div>
                   <div>
                     <div className="text-3xl font-extrabold text-[#102A43]">
-                      16
+                      {studentSummaries.length}
                     </div>
                     <div className="text-xs font-bold text-[#102A43] mt-1">
-                      Total Siswa
+                      Siswa dengan hasil kuis
                     </div>
                   </div>
                   <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full w-full bg-[#007EDA] rounded-full"></div>
+                    <div
+                      className="h-full bg-[#007EDA] rounded-full"
+                      style={{ width: `${Math.min(100, studentSummaries.length * 10)}%` }}
+                    ></div>
                   </div>
                 </div>
 
@@ -839,7 +1050,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </div>
                     <span className="inline-flex items-center gap-1.5 bg-[#FCD34D] text-[#102A43] text-[11px] font-extrabold px-3 py-1 rounded-full">
                       <Icon icon="lucide:alert-circle" className="w-3.5 h-3.5" />
-                      <span>4 Perlu Review</span>
+                      <span>{pendingLinkCount} Permintaan Tautan</span>
                     </span>
                   </div>
                   <div>
@@ -851,7 +1062,10 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </div>
                   </div>
                   <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full w-[78%] bg-[#007EDA] rounded-full"></div>
+                    <div
+                      className="h-full bg-[#007EDA] rounded-full"
+                      style={{ width: `${Math.min(100, materials.length * 10)}%` }}
+                    ></div>
                   </div>
                 </div>
 
@@ -862,7 +1076,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </div>
                     <span className="inline-flex items-center gap-1 bg-[#EEF4FF] text-[#007EDA] text-[11px] font-bold px-3 py-1 rounded-full">
                       <Icon icon="lucide:trending-up" className="w-3.5 h-3.5" />
-                      <span>Tingkat Lulus 84%</span>
+                      <span>Tingkat Lulus {passRate}%</span>
                     </span>
                   </div>
                   <div>
@@ -874,7 +1088,10 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </div>
                   </div>
                   <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full w-[84%] bg-[#007EDA] rounded-full"></div>
+                    <div
+                      className="h-full bg-[#007EDA] rounded-full"
+                      style={{ width: `${passRate}%` }}
+                    ></div>
                   </div>
                 </div>
               </section>
@@ -1031,7 +1248,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                           </span>
                         </div>
 
-                        {CHART_DATA.map((bar) => {
+                        {classChartData.map((bar) => {
                           const heightPercent = Math.max(
                             15,
                             Math.min(100, ((bar.nilai - 30) / 70) * 100)
@@ -1055,7 +1272,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </div>
 
                     <div className="flex items-center pl-8 pr-4 pt-2 justify-around">
-                      {CHART_DATA.map((bar) => (
+                      {classChartData.map((bar) => (
                         <span
                           key={bar.kelas}
                           className="text-[11px] font-extrabold text-[#102A43] w-16 md:w-20 text-center"
@@ -1065,6 +1282,11 @@ export default function TeacherDashboard({ user, onLogout }) {
                       ))}
                     </div>
                   </div>
+                  {classChartData.length === 0 && (
+                    <p className="text-center text-xs text-slate-500">
+                      Grafik akan tampil setelah siswa menyelesaikan kuis.
+                    </p>
+                  )}
 
                   <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-xl p-4 flex items-start gap-3 text-xs text-slate-600 leading-relaxed">
                     <Icon
@@ -1134,7 +1356,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                       type="button"
                       onClick={() => {
                         setActiveNav('quiz');
-                        setShowAddQuizModal(true);
+                        openAddQuiz();
                       }}
                       className="w-full bg-[#F8FAFC] hover:bg-[#EEF4FF] border border-slate-200/90 text-[#102A43] rounded-2xl p-4 text-left flex items-center justify-between gap-3 transition cursor-pointer group"
                     >
@@ -1587,7 +1809,7 @@ export default function TeacherDashboard({ user, onLogout }) {
 
                 <button
                   type="button"
-                  onClick={() => setShowAddQuizModal(true)}
+                  onClick={openAddQuiz}
                   className="bg-[#007EDA] hover:bg-[#0068B8] text-white text-xs font-bold px-5 py-2.5 rounded-xl inline-flex items-center gap-2 shadow-xs transition cursor-pointer"
                 >
                   <Icon icon="lucide:plus" className="w-4 h-4" />
@@ -1908,7 +2130,7 @@ export default function TeacherDashboard({ user, onLogout }) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200/80 text-xs">
-                      {HISTORY_TABLE_DATA.map((row) => (
+                      {studentSummaries.map((row) => (
                         <tr
                           key={row.id}
                           className="hover:bg-[#F8FAFC] transition"
@@ -1954,6 +2176,13 @@ export default function TeacherDashboard({ user, onLogout }) {
                           </td>
                         </tr>
                       ))}
+                      {studentSummaries.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="py-8 text-center text-sm text-slate-500">
+                            Belum ada hasil kuis dari siswa.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -2103,13 +2332,6 @@ export default function TeacherDashboard({ user, onLogout }) {
                               <div className="inline-flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => openConnectModal('edit', row)}
-                                  className="border border-slate-200 text-slate-600 hover:border-[#007EDA] hover:text-[#007EDA] text-[11px] font-bold px-3 py-1 rounded-lg transition cursor-pointer"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
                                   onClick={() =>
                                     openConnectModal('detail', row)
                                   }
@@ -2121,13 +2343,9 @@ export default function TeacherDashboard({ user, onLogout }) {
                             )}
 
                             {row.status === 'UNLINKED' && (
-                              <button
-                                type="button"
-                                onClick={() => openConnectModal('link', row)}
-                                className="bg-[#007EDA] hover:bg-[#0068B8] text-white text-[11px] font-bold px-3.5 py-1.5 rounded-lg transition cursor-pointer"
-                              >
-                                Hubungkan Orang Tua
-                              </button>
+                              <span className="text-[10px] text-slate-500">
+                                Orang tua perlu mengajukan ulang
+                              </span>
                             )}
                           </td>
                         </tr>
@@ -2204,24 +2422,6 @@ export default function TeacherDashboard({ user, onLogout }) {
                     </span>
                     <span className="font-extrabold text-[#102A43]">
                       {teacherProfile.nip}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-400 font-medium">
-                      Wali Kelas
-                    </span>
-                    <span className="font-extrabold text-[#102A43]">
-                      {teacherProfile.homeroomClass}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-400 font-medium">
-                      Instansi
-                    </span>
-                    <span className="font-extrabold text-[#102A43] text-right">
-                      {teacherProfile.school}
                     </span>
                   </div>
 
@@ -2309,7 +2509,7 @@ export default function TeacherDashboard({ user, onLogout }) {
 
                     <div>
                       <label className="block text-xs font-bold text-[#102A43] mb-1.5">
-                        NIP / NUPTK <span className="text-rose-500">*</span>
+                        NIP
                       </label>
                       <div className="relative">
                         <Icon
@@ -2318,16 +2518,9 @@ export default function TeacherDashboard({ user, onLogout }) {
                         />
                         <input
                           type="text"
-                          required
+                          readOnly
                           value={profileForm.nip}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              nip: e.target.value,
-                            })
-                          }
-                          placeholder="Masukkan NIP atau NUPTK"
-                          className="w-full bg-white border border-slate-200 focus:border-[#007EDA] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-[#102A43] focus:outline-none"
+                          className="w-full bg-slate-100 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-slate-600"
                         />
                       </div>
                     </div>
@@ -2356,53 +2549,6 @@ export default function TeacherDashboard({ user, onLogout }) {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-[#102A43] mb-1.5">
-                        Asal Sekolah / Instansi{' '}
-                        <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Icon
-                          icon="lucide:building-2"
-                          className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-                        />
-                        <input
-                          type="text"
-                          required
-                          value={profileForm.school}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              school: e.target.value,
-                            })
-                          }
-                          className="w-full bg-white border border-slate-200 focus:border-[#007EDA] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-[#102A43] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-[#102A43] mb-1.5">
-                        Wali Kelas &amp; Bidang Ajar
-                      </label>
-                      <div className="relative">
-                        <Icon
-                          icon="lucide:book-open"
-                          className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-                        />
-                        <input
-                          type="text"
-                          value={profileForm.homeroomClass}
-                          onChange={(e) =>
-                            setProfileForm({
-                              ...profileForm,
-                              homeroomClass: e.target.value,
-                            })
-                          }
-                          className="w-full bg-white border border-slate-200 focus:border-[#007EDA] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-[#102A43] focus:outline-none"
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   <div className="flex justify-end pt-1">
@@ -2654,7 +2800,15 @@ export default function TeacherDashboard({ user, onLogout }) {
             </div>
 
             <div className="w-28 h-28 mx-auto rounded-3xl bg-[#EEF4FF] border-2 border-[#007EDA]/20 flex flex-col items-center justify-center text-[#007EDA]">
-              <Icon icon="lucide:hand" className="w-10 h-10 mb-1" />
+              {selectedDictionaryEntry?.media_url ? (
+                <img
+                  src={selectedDictionaryEntry.media_url}
+                  alt={`Isyarat ${selectedChar} ${signMode}`}
+                  className="max-w-full max-h-full object-contain"
+                />
+              ) : (
+                <Icon icon="lucide:hand" className="w-10 h-10 mb-1" />
+              )}
               <span className="text-2xl font-extrabold text-[#102A43]">
                 {selectedChar}
               </span>
@@ -2665,8 +2819,8 @@ export default function TeacherDashboard({ user, onLogout }) {
                 Isyarat Karakter “{selectedChar}”
               </h4>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Peragakan posisi jari sesuai standar <strong>{signMode}</strong>{' '}
-                di depan siswa dengan pencahayaan yang jelas.
+                {selectedDictionaryEntry?.deskripsi ||
+                  <>Belum ada panduan untuk karakter ini. Peragakan posisi jari sesuai standar <strong>{signMode}</strong>.</>}
               </p>
             </div>
 
@@ -2721,22 +2875,17 @@ export default function TeacherDashboard({ user, onLogout }) {
 
               <div>
                 <label className="block text-xs font-bold text-[#102A43] mb-1">
-                  Kategori
+                  Deskripsi Materi *
                 </label>
-                <select
-                  value={materialForm.category}
+                <textarea
+                  required
+                  value={materialForm.description}
                   onChange={(e) =>
-                    setMaterialForm({
-                      ...materialForm,
-                      category: e.target.value,
-                    })
+                    setMaterialForm({ ...materialForm, description: e.target.value })
                   }
-                  className="w-full bg-[#F4F7FB] border border-slate-200 focus:border-[#007EDA] rounded-xl px-3.5 py-2.5 text-xs text-[#102A43] focus:outline-none"
-                >
-                  <option>SIBI &amp; BISINDO Dasar</option>
-                  <option>Kosakata Visual</option>
-                  <option>Struktur SPOK</option>
-                </select>
+                  className="w-full min-h-24 bg-[#F4F7FB] border border-slate-200 focus:border-[#007EDA] rounded-xl px-3.5 py-2.5 text-xs text-[#102A43] focus:outline-none"
+                  placeholder="Tulis materi pembelajaran yang akan dibaca murid."
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -2799,14 +2948,57 @@ export default function TeacherDashboard({ user, onLogout }) {
                 <label className="block text-xs font-bold text-[#102A43] mb-1">
                   Materi Terkait
                 </label>
-                <input
-                  type="text"
-                  value={quizForm.material}
+                <select
+                  required
+                  value={quizForm.materialId}
                   onChange={(e) =>
-                    setQuizForm({ ...quizForm, material: e.target.value })
+                    setQuizForm({ ...quizForm, materialId: e.target.value })
                   }
                   className="w-full bg-[#F4F7FB] border border-slate-200 focus:border-[#007EDA] rounded-xl px-3.5 py-2.5 text-xs text-[#102A43] focus:outline-none"
+                >
+                  <option value="">Pilih materi</option>
+                  {materials.map((material) => (
+                    <option key={material.id} value={material.id}>
+                      {material.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#102A43] mb-1">
+                  Instruksi Soal *
+                </label>
+                <textarea
+                  required
+                  maxLength={255}
+                  value={quizForm.questionPrompt}
+                  onChange={(e) =>
+                    setQuizForm({ ...quizForm, questionPrompt: e.target.value })
+                  }
+                  placeholder="Susun kata berikut menjadi kalimat yang benar."
+                  className="w-full min-h-20 bg-[#F4F7FB] border border-slate-200 focus:border-[#007EDA] rounded-xl px-3.5 py-2.5 text-xs text-[#102A43] focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#102A43] mb-1">
+                  Jawaban Kalimat *
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={255}
+                  value={quizForm.correctSentence}
+                  onChange={(e) =>
+                    setQuizForm({ ...quizForm, correctSentence: e.target.value })
+                  }
+                  placeholder="Siswa belajar bahasa Indonesia."
+                  className="w-full bg-[#F4F7FB] border border-slate-200 focus:border-[#007EDA] rounded-xl px-3.5 py-2.5 text-xs text-[#102A43] focus:outline-none"
+                />
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Sistem mengubah kalimat ini menjadi susun-kata interaktif.
+                </p>
               </div>
 
               <div>

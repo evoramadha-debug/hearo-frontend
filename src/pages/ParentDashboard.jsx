@@ -1,56 +1,94 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
-
-const INITIAL_QUIZ_HISTORY = [
-  {
-    id: 1,
-    date: '10 Nov 2026',
-    quizTitle: 'Objek dan Keterangan Tempat',
-    level: 'Menengah',
-    score: 85,
-    passingScore: 75,
-    status: 'Lulus',
-    questionReview:
-      'Susunan kalimat "Ibu membeli sayur di pasar" sudah tepat menempatkan Objek (sayur) dan Keterangan Tempat (di pasar).',
-    teacherNote:
-      'Ananda sudah sangat baik membedakan objek langsung dan keterangan tempat dalam struktur SPOK.',
-  },
-  {
-    id: 2,
-    date: '28 Okt 2026',
-    quizTitle: 'Kata Kerja sebagai Predikat',
-    level: 'Dasar',
-    score: 0,
-    passingScore: 70,
-    status: 'Belum Lulus',
-    questionReview:
-      'Latihan belum diselesaikan karena sesi terputus sebelum soal dikirimkan.',
-    teacherNote:
-      'Mohon pendampingan orang tua di rumah untuk mengulang kuis dasar kata kerja sehari-hari (makan, minum, membaca).',
-  },
-];
+import { apiRequest } from '../services/api';
+import { adaptLearningHistory } from '../services/adapters';
 
 export default function ParentDashboard({ user, onLogout }) {
-  // Data Profil Orang Tua (default Aril Mulya sesuai desain UI)
+  const [apiError, setApiError] = useState('');
+  const [quizHistory, setQuizHistory] = useState([]);
+  const [childRequests, setChildRequests] = useState([]);
+
+  // Data profil awal berasal dari akun yang berhasil masuk.
   const [parentProfile, setParentProfile] = useState({
-    fullName: user?.fullName || user?.name || 'Aril Mulya',
-    email: user?.email || 'Mulyaaril23@gmail.com',
-    phone: user?.phone || '083820397383',
-    relation: user?.relation || 'Ayah',
-    city: user?.city || 'Bandar Lampung',
-    joinedDate: '12 Nov 2026',
+    fullName: user?.fullName || user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    relation: user?.relation || 'Orang Tua',
+    joinedDate: user?.created_at
+      ? new Date(user.created_at).toLocaleDateString('id-ID')
+      : '',
   });
 
   // Data Anak / Siswa yang Terhubung
   const [linkedStudent, setLinkedStudent] = useState({
-    isConnected: true,
-    initials: 'FMV',
-    name: user?.studentName || 'Fauz Mulya Vaifriel',
-    nisn: '0102748391',
-    kelas: 'Kelas 10-A',
-    phone: '083890731710',
+    isConnected: false,
+    status: '',
+    initials: '',
+    name: '',
+    nisn: '',
+    kelas: '',
+    phone: '',
   });
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      apiRequest('/orang-tua/profil'),
+      apiRequest('/orang-tua/anak'),
+      apiRequest('/orang-tua/anak/riwayat'),
+    ])
+      .then(([profileResponse, childrenResponse, historyResponse]) => {
+        if (!active) return;
+        const profile = profileResponse.data || profileResponse;
+        setParentProfile((current) => ({
+          ...current,
+          fullName: profile.nama || current.fullName,
+          email: profile.email || current.email,
+          phone: profile.no_telepon || '',
+          joinedDate: profile.created_at
+            ? new Date(profile.created_at).toLocaleDateString('id-ID')
+            : '',
+        }));
+        setProfileForm((current) => ({
+          ...current,
+          fullName: profile.nama || current.fullName,
+          email: profile.email || current.email,
+          phone: profile.no_telepon || '',
+        }));
+        const requests = childrenResponse.data || [];
+        setChildRequests(requests);
+        const linkedChild = requests.find((child) => child.status === 'approved');
+        const displayedChild = linkedChild || requests.find((child) => child.status === 'pending');
+        if (displayedChild) {
+          setLinkedStudent({
+            isConnected: displayedChild.status === 'approved',
+            status: displayedChild.status,
+            initials: (displayedChild.nama_anak || 'Siswa')
+              .split(' ')
+              .slice(0, 3)
+              .map((part) => part[0]?.toUpperCase() || '')
+              .join(''),
+            name: displayedChild.nama_anak || '',
+            nisn: displayedChild.nisn || '',
+            kelas: displayedChild.kelas || '',
+            phone: '',
+          });
+        }
+        setQuizHistory((historyResponse.data || []).map((item) => ({
+          ...adaptLearningHistory(item),
+          questionReview: '',
+          teacherNote: '',
+        })));
+      })
+      .catch((error) => {
+        if (active) setApiError(`Gagal memuat data orang tua: ${error.message}`);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const initials =
     parentProfile.fullName
@@ -99,19 +137,43 @@ export default function ParentDashboard({ user, onLogout }) {
   ];
 
   // Filter tabel riwayat nilai kuis berdasarkan level
-  const filteredQuizHistory = INITIAL_QUIZ_HISTORY.filter((item) =>
+  const filteredQuizHistory = quizHistory.filter((item) =>
     levelFilter === 'Semua Level' ? true : item.level === levelFilter
   );
+  const averageScore = quizHistory.length
+    ? Math.round(quizHistory.reduce((total, item) => total + item.score, 0) / quizHistory.length)
+    : 0;
+  const passedQuizCount = quizHistory.filter((item) => item.passed).length;
+  const masteryPercent = quizHistory.length
+    ? Math.round((passedQuizCount / quizHistory.length) * 100)
+    : 0;
 
   // Simpan perubahan profil orang tua
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setParentProfile({ ...profileForm });
-    showToast('Data diri orang tua berhasil diperbarui.');
+    try {
+      const response = await apiRequest('/profil', {
+        method: 'PUT',
+        body: {
+          nama: profileForm.fullName.trim(),
+          email: profileForm.email.trim(),
+          no_telepon: profileForm.phone.trim(),
+        },
+      });
+      setParentProfile((current) => ({
+        ...current,
+        fullName: response.data.nama,
+        email: response.data.email,
+        phone: response.data.no_telepon,
+      }));
+      showToast('Data diri orang tua berhasil diperbarui.');
+    } catch (error) {
+      setApiError(`Profil gagal diperbarui: ${error.message}`);
+    }
   };
 
   // Simpan password baru
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     if (
       passwordForm.newPassword.length < 8 ||
@@ -124,43 +186,62 @@ export default function ParentDashboard({ user, onLogout }) {
       showToast('Konfirmasi password baru tidak sesuai.');
       return;
     }
-    setPasswordForm({
-      oldPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-    showToast('Password akun berhasil diubah.');
+    try {
+      await apiRequest('/password', {
+        method: 'PUT',
+        body: {
+          current_password: passwordForm.oldPassword,
+          new_password: passwordForm.newPassword,
+        },
+      });
+      setPasswordForm({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      showToast('Password akun berhasil diubah.');
+    } catch (error) {
+      setApiError(`Password gagal diubah: ${error.message}`);
+    }
   };
 
-  // Putuskan tautan siswa
-  const handleDisconnectStudent = () => {
-    setLinkedStudent((prev) => ({ ...prev, isConnected: false }));
-    showToast(`Tautan pemantauan dengan ${linkedStudent.name} diputuskan.`);
-  };
-
-  // Hubungkan kembali siswa
-  const handleConnectStudent = (e) => {
+  // Ajukan permintaan penghubungan siswa
+  const handleConnectStudent = async (e) => {
     e.preventDefault();
-    if (!childNameInput.trim()) return;
-    const childInitials = childNameInput
-      .trim()
-      .split(' ')
-      .slice(0, 3)
-      .map((part) => part[0]?.toUpperCase() || '')
-      .join('');
-
-    setLinkedStudent({
-      isConnected: true,
-      initials: childInitials || 'SW',
-      name: childNameInput.trim(),
-      nisn: childNisnInput.trim() || '0102748391',
-      kelas: 'Kelas 10-A',
-      phone: '083890731710',
-    });
-    setChildNameInput('');
-    setChildNisnInput('');
-    setShowLinkChildModal(false);
-    showToast('Akun siswa berhasil dihubungkan kembali.');
+    try {
+      const response = await apiRequest('/orang-tua/anak', {
+        method: 'POST',
+        body: {
+          nisn_siswa: childNisnInput.trim(),
+          nama_siswa: childNameInput.trim(),
+        },
+      });
+      const newRequest = response.data;
+      const nextRequest = {
+        id_link_request: newRequest.id_link_request,
+        status: newRequest.status,
+        nama_anak: newRequest.nama_anak,
+        nisn: newRequest.nisn,
+      };
+      setChildRequests((current) => [nextRequest, ...current]);
+      if (!linkedStudent.isConnected) {
+        setLinkedStudent({
+          isConnected: false,
+          status: 'pending',
+          initials: childNameInput.trim().split(' ').map((part) => part[0]?.toUpperCase() || '').join(''),
+          name: newRequest.nama_anak,
+          nisn: newRequest.nisn,
+          kelas: '',
+          phone: '',
+        });
+      }
+      setChildNameInput('');
+      setChildNisnInput('');
+      setShowLinkChildModal(false);
+      showToast(response.message);
+    } catch (error) {
+      setApiError(`Permintaan tautan gagal dikirim: ${error.message}`);
+    }
   };
 
   return (
@@ -269,6 +350,14 @@ export default function ParentDashboard({ user, onLogout }) {
          ==================================================================== */}
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 max-w-6xl w-full mx-auto px-5 md:px-10 py-8 space-y-6">
+          {apiError && (
+            <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {apiError}
+              <button type="button" className="ml-3 font-bold underline" onClick={() => setApiError('')}>
+                Tutup
+              </button>
+            </p>
+          )}
           {/* Toast Notifikasi */}
           {toastMessage && (
             <div className="bg-[#0F233C] text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-md flex items-center justify-between">
@@ -350,7 +439,7 @@ export default function ParentDashboard({ user, onLogout }) {
 
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-extrabold text-[#102A43]">
-                      42,5
+                      {averageScore}
                     </span>
                     <span className="text-sm font-semibold text-slate-400">
                       / 100
@@ -358,11 +447,11 @@ export default function ParentDashboard({ user, onLogout }) {
                   </div>
 
                   <p className="text-[11px] text-slate-400">
-                    Kuis lulus 1 dari 2 • 2 pengerjaan
+                    Kuis lulus {passedQuizCount} dari {quizHistory.length} • {quizHistory.length} pengerjaan
                   </p>
                 </div>
 
-                {/* Kartu 2: Persentase Penguasaan (Donut 50%) */}
+                {/* Kartu 2: Persentase Penguasaan */}
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 flex items-center gap-5">
                   <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
                     <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
@@ -375,7 +464,7 @@ export default function ParentDashboard({ user, onLogout }) {
                       />
                       <path
                         className="text-[#007EDA]"
-                        strokeDasharray="50, 100"
+                        strokeDasharray={`${masteryPercent}, 100`}
                         strokeWidth="3.8"
                         strokeLinecap="round"
                         stroke="currentColor"
@@ -384,7 +473,7 @@ export default function ParentDashboard({ user, onLogout }) {
                       />
                     </svg>
                     <span className="absolute text-xs font-extrabold text-[#102A43]">
-                      50%
+                      {masteryPercent}%
                     </span>
                   </div>
 
@@ -410,178 +499,36 @@ export default function ParentDashboard({ user, onLogout }) {
                       Grafik Progres Nilai
                     </h2>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      Garis merah putus-putus = rata-rata skor lulus
+                      Nilai pengerjaan kuis terbaru yang tercatat
                     </p>
                   </div>
                 </div>
 
-                {/* SVG Area Chart Quis 1 (85) -> Quis 2 (0) */}
-                <div className="pt-2 overflow-x-auto">
-                  <div className="min-w-[540px]">
-                    <svg viewBox="0 0 680 245" className="w-full h-60">
-                      <defs>
-                        <linearGradient
-                          id="parentScoreArea"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="#007EDA"
-                            stopOpacity="0.55"
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="#007EDA"
-                            stopOpacity="0.02"
-                          />
-                        </linearGradient>
-                      </defs>
-
-                      {/* Garis Grid Horizontal */}
-                      <line
-                        x1="75"
-                        y1="30"
-                        x2="635"
-                        y2="30"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                      />
-                      <line
-                        x1="75"
-                        y1="66"
-                        x2="635"
-                        y2="66"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                      />
-                      <line
-                        x1="75"
-                        y1="102"
-                        x2="635"
-                        y2="102"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                      />
-                      <line
-                        x1="75"
-                        y1="138"
-                        x2="635"
-                        y2="138"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                      />
-                      <line
-                        x1="75"
-                        y1="174"
-                        x2="635"
-                        y2="174"
-                        stroke="#F1F5F9"
-                        strokeWidth="1"
-                      />
-
-                      {/* Label Sumbu Y */}
-                      <text x="42" y="34" fontSize="11" fill="#94A3B8">
-                        100
-                      </text>
-                      <text x="48" y="70" fontSize="11" fill="#94A3B8">
-                        80
-                      </text>
-                      <text x="48" y="106" fontSize="11" fill="#94A3B8">
-                        60
-                      </text>
-                      <text x="48" y="142" fontSize="11" fill="#94A3B8">
-                        40
-                      </text>
-                      <text x="48" y="178" fontSize="11" fill="#94A3B8">
-                        20
-                      </text>
-
-                      {/* Area Fill Biru */}
-                      <path
-                        d="M 75 48 L 635 202 L 635 202 L 75 202 Z"
-                        fill="url(#parentScoreArea)"
-                      />
-
-                      {/* Garis Merah Putus-putus Skor Lulus (71) */}
-                      <line
-                        x1="75"
-                        y1="82"
-                        x2="635"
-                        y2="82"
-                        stroke="#EF4444"
-                        strokeWidth="1.5"
-                        strokeDasharray="4 4"
-                      />
-                      <text
-                        x="72"
-                        y="96"
-                        fontSize="10"
-                        fontWeight="700"
-                        fill="#475569"
+                <div className="flex min-h-48 items-end gap-3 overflow-x-auto border-b border-slate-200 px-2 pb-2">
+                  {quizHistory.length === 0 ? (
+                    <p className="w-full self-center text-center text-xs text-slate-500">
+                      Grafik akan tampil setelah siswa menyelesaikan kuis.
+                    </p>
+                  ) : (
+                    quizHistory.slice(0, 7).reverse().map((attempt) => (
+                      <div
+                        key={attempt.id}
+                        className="flex min-w-16 flex-1 flex-col items-center justify-end gap-2"
                       >
-                        Skor lulus (71)
-                      </text>
-
-                      {/* Garis Kurva Biru Utama */}
-                      <line
-                        x1="75"
-                        y1="48"
-                        x2="635"
-                        y2="202"
-                        stroke="#007EDA"
-                        strokeWidth="3"
-                      />
-
-                      {/* Titik Quis 1 (Skor 85) */}
-                      <circle
-                        cx="75"
-                        cy="48"
-                        r="4.5"
-                        fill="#007EDA"
-                        stroke="#FFFFFF"
-                        strokeWidth="1.5"
-                      />
-                      <text
-                        x="76"
-                        y="39"
-                        fontSize="10"
-                        fontWeight="700"
-                        fill="#102A43"
-                      >
-                        85
-                      </text>
-
-                      {/* Titik Quis 2 (Skor 0) */}
-                      <circle
-                        cx="635"
-                        cy="202"
-                        r="4.5"
-                        fill="#FFFFFF"
-                        stroke="#EF4444"
-                        strokeWidth="2.5"
-                      />
-                      <text
-                        x="633"
-                        y="191"
-                        fontSize="10"
-                        fontWeight="700"
-                        fill="#102A43"
-                      >
-                        0
-                      </text>
-
-                      {/* Label Sumbu X */}
-                      <text x="72" y="228" fontSize="11" fill="#64748B">
-                        Quis 1
-                      </text>
-                      <text x="615" y="228" fontSize="11" fill="#64748B">
-                        Quis 2
-                      </text>
-                    </svg>
-                  </div>
+                        <span className="text-[11px] font-bold text-[#102A43]">
+                          {attempt.score}
+                        </span>
+                        <div
+                          className="w-full rounded-t-lg bg-[#007EDA]"
+                          style={{ height: `${Math.max(4, attempt.score)}px`, maxHeight: '160px' }}
+                          title={`${attempt.quizTitle}: ${attempt.score}/100`}
+                        />
+                        <span className="max-w-20 truncate text-[10px] text-slate-500">
+                          {attempt.quizTitle}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </section>
 
@@ -692,6 +639,13 @@ export default function ParentDashboard({ user, onLogout }) {
                           </tr>
                         );
                       })}
+                      {filteredQuizHistory.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="py-8 text-center text-sm text-slate-500">
+                            Belum ada riwayat kuis untuk anak yang sudah disetujui guru.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -736,15 +690,6 @@ export default function ParentDashboard({ user, onLogout }) {
                       </span>
                       <span className="font-extrabold text-[#102A43]">
                         {parentProfile.relation}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-400 font-medium">
-                        Domisili
-                      </span>
-                      <span className="font-extrabold text-[#102A43]">
-                        {parentProfile.city}
                       </span>
                     </div>
 
@@ -797,27 +742,42 @@ export default function ParentDashboard({ user, onLogout }) {
 
                         <button
                           type="button"
-                          onClick={handleDisconnectStudent}
-                          className="border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-[#007EDA] hover:text-rose-600 text-xs font-bold px-4 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
-                        >
-                          <Icon icon="lucide:link-2-off" className="w-3.5 h-3.5" />
-                          <span>Putuskan</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="bg-[#F8FAFC] border border-dashed border-slate-300 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
-                        <span className="text-xs text-slate-500 font-medium">
-                          Belum ada akun siswa yang terhubung.
-                        </span>
-                        <button
-                          type="button"
                           onClick={() => setShowLinkChildModal(true)}
-                          className="bg-[#007EDA] hover:bg-[#0068B8] text-white text-xs font-bold px-4 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
+                          className="border border-slate-200 hover:border-[#007EDA] hover:bg-[#EEF4FF] text-[#007EDA] text-xs font-bold px-4 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
                         >
                           <Icon icon="lucide:user-plus" className="w-3.5 h-3.5" />
                           <span>Hubungkan Siswa</span>
                         </button>
                       </div>
+                    ) : (
+                      <div className="bg-[#F8FAFC] border border-dashed border-slate-300 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                        <span className="text-xs text-slate-500 font-medium">
+                          {linkedStudent.status === 'pending'
+                            ? `Permintaan untuk ${linkedStudent.name} menunggu persetujuan guru.`
+                            : 'Belum ada akun siswa yang terhubung.'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowLinkChildModal(true)}
+                          disabled={linkedStudent.status === 'pending'}
+                          className="bg-[#007EDA] hover:bg-[#0068B8] text-white text-xs font-bold px-4 py-2 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Icon icon="lucide:user-plus" className="w-3.5 h-3.5" />
+                          <span>{linkedStudent.status === 'pending' ? 'Menunggu Persetujuan' : 'Hubungkan Siswa'}</span>
+                        </button>
+                      </div>
+                    )}
+                    {childRequests.filter((request) => request.status === 'pending').length > 1 && (
+                      <ul className="space-y-2 border-t border-slate-100 pt-3">
+                        {childRequests
+                          .filter((request) => request.status === 'pending')
+                          .slice(1)
+                          .map((request) => (
+                            <li key={request.id_link_request} className="text-xs text-amber-700">
+                              Permintaan untuk {request.nama_anak} menunggu persetujuan guru.
+                            </li>
+                          ))}
+                      </ul>
                     )}
                   </div>
 
@@ -908,56 +868,6 @@ export default function ParentDashboard({ user, onLogout }) {
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-bold text-[#102A43] mb-1.5">
-                          Hubungan dengan Siswa{' '}
-                          <span className="text-rose-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <Icon
-                            icon="lucide:heart-handshake"
-                            className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-                          />
-                          <select
-                            value={profileForm.relation}
-                            onChange={(e) =>
-                              setProfileForm({
-                                ...profileForm,
-                                relation: e.target.value,
-                              })
-                            }
-                            className="w-full bg-white border border-slate-200 focus:border-[#007EDA] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-[#102A43] focus:outline-none cursor-pointer"
-                          >
-                            <option value="Ayah">Ayah</option>
-                            <option value="Ibu">Ibu</option>
-                            <option value="Wali Murid">Wali Murid</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-xs font-bold text-[#102A43] mb-1.5">
-                          Kota / Domisili
-                        </label>
-                        <div className="relative">
-                          <Icon
-                            icon="lucide:map-pin"
-                            className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
-                          />
-                          <input
-                            type="text"
-                            value={profileForm.city}
-                            onChange={(e) =>
-                              setProfileForm({
-                                ...profileForm,
-                                city: e.target.value,
-                              })
-                            }
-                            placeholder="Contoh: Bandar Lampung"
-                            className="w-full bg-white border border-slate-200 focus:border-[#007EDA] rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-[#102A43] focus:outline-none"
-                          />
-                        </div>
-                      </div>
                     </div>
 
                     <div className="flex justify-end pt-1">
@@ -1171,7 +1081,8 @@ export default function ParentDashboard({ user, onLogout }) {
                 Evaluasi Pengerjaan:
               </div>
               <p className="text-slate-600 leading-relaxed">
-                {selectedReviewModal.questionReview}
+                {selectedReviewModal.questionReview ||
+                  'Backend saat ini menyimpan skor dan judul kuis, tetapi belum menyimpan rincian jawaban per soal.'}
               </p>
             </div>
 
@@ -1181,7 +1092,7 @@ export default function ParentDashboard({ user, onLogout }) {
                 <span>Catatan Guru untuk Orang Tua:</span>
               </div>
               <p className="text-[#102A43] leading-relaxed">
-                {selectedReviewModal.teacherNote}
+                {selectedReviewModal.teacherNote || 'Belum ada catatan guru untuk hasil ini.'}
               </p>
             </div>
 

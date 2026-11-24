@@ -1,38 +1,23 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { apiRequest } from '../services/api';
 
-const INITIAL_CONNECTED_PARENTS = [
-  {
-    id: 'parent-1',
-    initials: 'HH',
-    name: 'Hendra Hidayat',
-    email: 'ortu2@hearo.ai',
-    phone: '081234567222',
-  },
-  {
-    id: 'parent-2',
-    initials: 'OT',
-    name: 'Orang Tua Demo',
-    email: 'ortu@hearo.ai',
-    phone: '081299998888',
-  },
-];
-
-export default function StudentProfilView({ user, onUpdateProfile }) {
+export default function StudentProfilView({
+  user,
+  onUpdateProfile,
+  connectedParents = [],
+}) {
   // State Orang Tua Terhubung
-  const [connectedParents, setConnectedParents] = useState(
-    INITIAL_CONNECTED_PARENTS
-  );
-  const [parentToDisconnect, setParentToDisconnect] = useState(null);
-
   // State Data Diri
   const [profileData, setProfileData] = useState({
-    fullName: user?.name || 'Fauz Mulya Vaifriel',
-    email: user?.email || 'siswa1@hearo.ai',
-    phone: '081281298001',
-    kelas: '10-A',
-    nisn: '0102748391',
-    joinedAt: '12 Nov 2026',
+    fullName: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    kelas: user?.kelas || '',
+    nisn: user?.nisn || '',
+    joinedAt: user?.created_at
+      ? new Date(user.created_at).toLocaleDateString('id-ID')
+      : '',
   });
 
   const [formData, setFormData] = useState({
@@ -57,17 +42,8 @@ export default function StudentProfilView({ user, onUpdateProfile }) {
   });
   const [passwordFeedback, setPasswordFeedback] = useState(null);
 
-  // Handler Putuskan Hubungan Orang Tua
-  const handleConfirmDisconnect = () => {
-    if (!parentToDisconnect) return;
-    setConnectedParents((prev) =>
-      prev.filter((p) => p.id !== parentToDisconnect.id)
-    );
-    setParentToDisconnect(null);
-  };
-
   // Handler Simpan Perubahan Data Diri
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (
       !formData.fullName.trim() ||
@@ -82,28 +58,34 @@ export default function StudentProfilView({ user, onUpdateProfile }) {
       return;
     }
 
-    const updated = {
-      ...profileData,
-      fullName: formData.fullName.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      kelas: formData.kelas.trim(),
-    };
-
-    setProfileData(updated);
-    if (onUpdateProfile) {
-      onUpdateProfile(updated);
+    try {
+      const response = await apiRequest('/profil', {
+        method: 'PUT',
+        body: {
+          nama: formData.fullName.trim(),
+          email: formData.email.trim(),
+          no_telepon: formData.phone.trim(),
+          kelas: formData.kelas.trim(),
+        },
+      });
+      const updated = {
+        ...profileData,
+        fullName: response.data.nama,
+        email: response.data.email,
+        phone: response.data.no_telepon,
+        kelas: response.data.kelas,
+      };
+      setProfileData(updated);
+      onUpdateProfile?.(updated);
+      setProfileFeedback({ type: 'success', text: 'Perubahan data diri berhasil disimpan.' });
+    } catch (error) {
+      setProfileFeedback({ type: 'error', text: `Profil gagal diperbarui: ${error.message}` });
     }
-
-    setProfileFeedback({
-      type: 'success',
-      text: 'Perubahan data diri berhasil disimpan.',
-    });
     setTimeout(() => setProfileFeedback(null), 3500);
   };
 
   // Handler Ganti Password
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
     const { oldPassword, newPassword, confirmPassword } = passwordForm;
 
@@ -131,15 +113,23 @@ export default function StudentProfilView({ user, onUpdateProfile }) {
       return;
     }
 
-    setPasswordForm({
-      oldPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-    setPasswordFeedback({
-      type: 'success',
-      text: 'Password akunmu berhasil diperbarui.',
-    });
+    try {
+      await apiRequest('/password', {
+        method: 'PUT',
+        body: {
+          current_password: oldPassword,
+          new_password: newPassword,
+        },
+      });
+      setPasswordForm({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setPasswordFeedback({ type: 'success', text: 'Password akunmu berhasil diperbarui.' });
+    } catch (error) {
+      setPasswordFeedback({ type: 'error', text: `Password gagal diperbarui: ${error.message}` });
+    }
     setTimeout(() => setPasswordFeedback(null), 3500);
   };
 
@@ -227,46 +217,25 @@ export default function StudentProfilView({ user, onUpdateProfile }) {
                   >
                     <div className="flex items-center gap-3.5">
                       <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#007EDA] text-xs font-extrabold flex items-center justify-center shrink-0">
-                        {parent.initials}
+                        {parent.initials || parent.name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <div>
                         <div className="text-xs md:text-sm font-extrabold text-[#102A43]">
                           {parent.name}
                         </div>
                         <div className="text-[11px] text-slate-400 mt-0.5">
-                          {parent.email} &middot; {parent.phone}
+                          {[parent.email, parent.phone].filter(Boolean).join(' · ') || 'Akun orang tua terhubung'}
                         </div>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setParentToDisconnect(parent)}
-                      className="px-4 py-2 rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50/50 text-slate-600 hover:text-red-600 text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
-                    >
-                      <Icon
-                        icon="lucide:unlink"
-                        className="w-3.5 h-3.5 text-[#007EDA]"
-                      />
-                      <span>Putuskan</span>
-                    </button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-xl p-4 text-center space-y-2">
+              <div className="bg-[#F8FAFC] border border-slate-200/80 rounded-xl p-4 text-center">
                 <p className="text-xs text-slate-500">
                   Belum ada akun orang tua yang terhubung saat ini.
                 </p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setConnectedParents(INITIAL_CONNECTED_PARENTS)
-                  }
-                  className="text-xs font-extrabold text-[#007EDA] hover:underline cursor-pointer"
-                >
-                  Pulihkan Koneksi Demo
-                </button>
               </div>
             )}
           </section>
@@ -571,47 +540,6 @@ export default function StudentProfilView({ user, onUpdateProfile }) {
         </div>
       </div>
 
-      {/* ================= MODAL KONFIRMASI PUTUSKAN KONEKSI ORANG TUA ================= */}
-      {parentToDisconnect && (
-        <div
-          onClick={() => setParentToDisconnect(null)}
-          className="fixed inset-0 bg-[#102A43]/50 backdrop-blur-xs z-50 flex items-center justify-center p-4"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4"
-          >
-            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
-              <Icon icon="lucide:unlink" className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="text-base font-extrabold text-[#102A43]">
-                Putuskan Koneksi Orang Tua?
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Akun <strong>{parentToDisconnect.name}</strong> tidak lagi dapat
-                memantau perkembangan nilai dan LKPD-mu.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => setParentToDisconnect(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#102A43] text-xs font-extrabold transition cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDisconnect}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold transition cursor-pointer"
-              >
-                Ya, Putuskan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import HearoLogo from '../components/HearoLogo';
 import { Icon } from '@iconify/react';
 import logoIcon from '../assets/logo-icon.svg';
@@ -6,7 +6,40 @@ import logoIcon from '../assets/logo-icon.svg';
 export default function LandingPage({ onNavigateToLogin, onNavigateToRegister }) {
   const [activeTab, setActiveTab] = useState('SIBI'); // SIBI / BISINDO
   const [activeNav, setActiveNav] = useState('Beranda');
-  
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    const sections = [
+      { id: 'hero', name: 'Beranda' },
+      { id: 'kamus', name: 'Kamus' },
+      { id: 'fitur', name: 'Fitur' },
+      { id: 'aplikasi', name: 'Aplikasi' },
+      { id: 'tentang', name: 'Tentang' },
+    ];
+
+    const updateActiveNav = () => {
+      const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+      const activationPoint = headerHeight + 32;
+      const currentSection = sections.reduce((activeSection, section) => {
+        const element = document.getElementById(section.id);
+        return element && element.getBoundingClientRect().top <= activationPoint
+          ? section.name
+          : activeSection;
+      }, sections[0].name);
+
+      setActiveNav(currentSection);
+    };
+
+    updateActiveNav();
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    window.addEventListener('resize', updateActiveNav);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveNav);
+      window.removeEventListener('resize', updateActiveNav);
+    };
+  }, []);
+
   // State untuk Pop-up Modal Karakter Kamus
   const [selectedCharacter, setSelectedCharacter] = useState(null);
 
@@ -18,6 +51,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
   const handleNavClick = (sectionId, navName) => {
     setActiveNav(navName);
+    setIsMobileNavOpen(false);
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -44,21 +78,28 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F7FC] text-[#102A43] font-sans antialiased relative">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-[#F4F7FC] text-[#102A43] font-sans antialiased relative">
       
       {/* ================= 1. NAVBAR FIXED ================= */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex justify-between items-center">
+      <header className="fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 py-3.5">
+          <div className="flex flex-wrap justify-between items-center gap-y-2 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:gap-4">
           
-          <div className="flex items-center cursor-pointer" onClick={() => handleNavClick('hero', 'Beranda')}>
+          <button
+            type="button"
+            aria-label="Kembali ke Beranda"
+            onClick={() => handleNavClick('hero', 'Beranda')}
+            className="flex items-center cursor-pointer bg-transparent border-0 p-0"
+          >
             <HearoLogo variant="card" />
-          </div>
+          </button>
 
-          <nav className="hidden md:flex items-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
+          <nav aria-label="Navigasi utama" className="hidden lg:flex items-center justify-self-center bg-[#F0F4F8] p-1.5 rounded-full border border-slate-200/60 shadow-inner">
             {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
               <button
                 key={item}
-                onClick={() => handleNavClick(item.toLowerCase(), item)}
+                onClick={() => handleNavClick(item === 'Beranda' ? 'hero' : item.toLowerCase(), item)}
+                aria-current={activeNav === item ? 'location' : undefined}
                 className={`px-5 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer ${
                   activeNav === item
                     ? 'bg-white text-[#007EDA] shadow-md scale-102'
@@ -70,28 +111,58 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             ))}
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2.5 lg:ml-0 lg:justify-self-end">
             <button
+              type="button"
+              onClick={() => setIsMobileNavOpen((open) => !open)}
+              aria-label={isMobileNavOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+              aria-expanded={isMobileNavOpen}
+              className="lg:hidden w-9 h-9 rounded-full border border-slate-200 text-[#102A43] flex items-center justify-center"
+            >
+              <Icon icon={isMobileNavOpen ? 'lucide:x' : 'lucide:menu'} className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
               onClick={onNavigateToLogin}
-              className="px-5 py-2.5 rounded-full border-2 border-[#007EDA] text-[#007EDA] hover:bg-[#007EDA]/10 text-xs font-bold transition cursor-pointer"
+              className="px-3 sm:px-5 py-2.5 rounded-full border-2 border-[#007EDA] text-[#007EDA] hover:bg-[#007EDA]/10 text-[11px] sm:text-xs font-bold transition cursor-pointer"
             >
               Masuk
             </button>
             <button
+              type="button"
               onClick={onNavigateToRegister}
-              className="px-5 py-2.5 rounded-full bg-[#007EDA] hover:bg-[#0067B8] text-white text-xs font-bold transition shadow-md cursor-pointer"
+              className="px-3 sm:px-5 py-2.5 rounded-full bg-[#007EDA] hover:bg-[#0067B8] text-white text-[11px] sm:text-xs font-bold transition shadow-md cursor-pointer"
             >
               Daftar
             </button>
-            <div className="w-8 h-8 rounded-full bg-[#007EDA] text-white flex items-center justify-center text-sm font-bold shadow-sm">
+            <div className="hidden sm:flex w-8 h-8 rounded-full bg-[#007EDA] text-white items-center justify-center text-sm font-bold shadow-sm">
               <Icon icon="lucide:user" className="w-4 h-4" />
             </div>
           </div>
+          </div>
+          {isMobileNavOpen && (
+            <nav aria-label="Navigasi mobile" className="lg:hidden mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+              {['Beranda', 'Kamus', 'Fitur', 'Aplikasi', 'Tentang'].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => handleNavClick(item === 'Beranda' ? 'hero' : item.toLowerCase(), item)}
+                  className={`rounded-xl px-3 py-2.5 text-left text-xs font-bold ${
+                    activeNav === item
+                      ? 'bg-[#E0F2FE] text-[#007EDA]'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </nav>
+          )}
         </div>
       </header>
 
       {/* ================= 2. HERO BANNER SECTION ================= */}
-      <section id="hero" className="bg-[#007EDA] text-white py-12 md:py-20 relative overflow-hidden">
+      <section id="hero" className="scroll-mt-24 bg-[#007EDA] text-white pt-24 pb-12 md:pt-28 md:pb-20 relative overflow-hidden">
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#0067B8]/40 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -right-24 w-[500px] h-[500px] bg-[#6DD5FA]/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -142,7 +213,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </section>
 
       {/* ================= 3. KAMUS BAHASA ISYARAT ================= */}
-      <section id="kamus" className="py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 text-center">
+      <section id="kamus" className="scroll-mt-24 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 text-center">
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#102A43] mb-3">
           Kamus Bahasa Isyarat
         </h2>
@@ -215,18 +286,19 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
       {/* ================= POP-UP MODAL KAMUS ISYARAT FIGMA ================= */}
       {selectedCharacter && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn"
           onClick={() => setSelectedCharacter(null)}
         >
-          <div 
+          <div
             className="relative max-w-xs md:max-w-sm w-full animate-scaleUp overflow-hidden rounded-[24px] shadow-2xl border-2 border-white bg-white"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedCharacter(null)}
-              className="absolute top-3.5 right-3.5 z-20 w-7 h-7 bg-white/80 hover:bg-white text-slate-700 rounded-full font-extrabold flex items-center justify-center text-xs transition cursor-pointer shadow-md border border-slate-200"
+              className="absolute top-3.5 right-5 z-20 w-9 h-9 bg-white/80 hover:bg-white text-slate-700 rounded-full font-extrabold flex items-center justify-center text-sm transition cursor-pointer shadow-md border border-slate-200"
               title="Tutup"
+              aria-label="Tutup kamus"
             >
               ✕
             </button>
@@ -301,7 +373,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       )}
 
       {/* ================= 4. FITUR UNGGULAN HEARO AI ================= */}
-      <section id="fitur" className="py-16 md:py-24 bg-[#EFF5FC]">
+      <section id="fitur" className="scroll-mt-24 py-16 md:py-24 bg-[#EFF5FC]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 text-center">
           
           <div className="inline-block bg-[#DCEBFA] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-4 tracking-wider">
@@ -406,7 +478,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
       </section>
 
       {/* ================= 5. APLIKASI HEARO MOBILE & PERAN PENGGUNA ================= */}
-      <section id="aplikasi" className="py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
+      <section id="aplikasi" className="scroll-mt-24 py-16 md:py-24 max-w-7xl mx-auto px-4 md:px-8 space-y-20">
         
        {/* Banner Aplikasi Mobile Presisi Figma */}
         <div className="relative bg-[#EFF5FC] rounded-[36px] p-8 md:p-12 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm overflow-hidden">
@@ -421,13 +493,18 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
             <div className="flex flex-col items-center justify-center my-auto space-y-3">
               
               {/* Kotak App Icon (Memanggil logo-icon.svg langsung) */}
-              <div className="w-20 h-20 bg-[#0067B8] rounded-2xl flex items-center justify-center p-3 shadow-lg border border-white/20">
+              <button
+                type="button"
+                aria-label="Kembali ke Beranda"
+                onClick={() => handleNavClick('hero', 'Beranda')}
+                className="w-20 h-20 bg-[#0067B8] rounded-2xl flex items-center justify-center p-3 shadow-lg border border-white/20 cursor-pointer"
+              >
                 <img 
                   src={logoIcon} 
                   alt="Hearo Icon" 
                   className="w-full h-full object-contain"
                 />
-              </div>
+              </button>
               
               {/* Tulisan Hearo Hanya 1 di Bawah Logo */}
               <span className="text-2xl font-black tracking-wide text-white drop-shadow-md">
@@ -469,7 +546,7 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
 
         </div>
         {/* Peran Pengguna Header */}
-        <div id="tentang" className="text-center">
+        <div id="tentang" className="scroll-mt-24 text-center">
           <div className="inline-block bg-[#E3F2FD] text-[#007EDA] text-[11px] font-extrabold uppercase px-4 py-1.5 rounded-full mb-3 tracking-wider">
             PERAN PENGGUNA
           </div>
@@ -634,7 +711,14 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
           <div className="md:col-span-7 flex flex-col items-center md:items-center text-center space-y-5">
             
             {/* Logo Hearo Transparent (Ikon Telinga + Teks Tanpa Background Card) */}
-            <HearoLogo className="h-9" variant="transparent" />
+            <button
+              type="button"
+              aria-label="Kembali ke Beranda"
+              onClick={() => handleNavClick('hero', 'Beranda')}
+              className="cursor-pointer bg-transparent border-0 p-0"
+            >
+              <HearoLogo className="h-9" variant="transparent" />
+            </button>
 
             {/* Deskripsi Misi Hearo */}
             <p className="text-xs md:text-sm text-[#9FB3C8] leading-relaxed max-w-lg font-normal">

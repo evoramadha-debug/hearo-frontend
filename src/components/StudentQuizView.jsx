@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 
 export const INITIAL_QUIZZES = [
@@ -104,9 +104,14 @@ export const INITIAL_QUIZZES = [
   },
 ];
 
-export default function StudentQuizView({ initialQuizzes = INITIAL_QUIZZES }) {
+export default function StudentQuizView({
+  initialQuizzes = INITIAL_QUIZZES,
+  onComplete,
+}) {
   const [quizzes, setQuizzes] = useState(initialQuizzes);
   const [searchQuery, setSearchQuery] = useState('');
+  const [submissionError, setSubmissionError] = useState('');
+  const [isSavingResult, setIsSavingResult] = useState(false);
 
   // Mode tampilan: 'list' | 'taking' | 'result'
   const [viewMode, setViewMode] = useState('list');
@@ -117,6 +122,10 @@ export default function StudentQuizView({ initialQuizzes = INITIAL_QUIZZES }) {
   const [userAnswers, setUserAnswers] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [latestResult, setLatestResult] = useState(null);
+
+  useEffect(() => {
+    setQuizzes(initialQuizzes);
+  }, [initialQuizzes]);
 
   const activeQuiz = quizzes.find((q) => q.id === activeQuizId) || null;
 
@@ -187,7 +196,7 @@ export default function StudentQuizView({ initialQuizzes = INITIAL_QUIZZES }) {
   };
 
   // Hitung Skor & Tampilkan Pembahasan
-  const finalizeSubmission = () => {
+  const finalizeSubmission = async () => {
     if (!activeQuiz) return;
     setShowConfirmModal(false);
 
@@ -229,6 +238,16 @@ export default function StudentQuizView({ initialQuizzes = INITIAL_QUIZZES }) {
     const score = Math.round((correctCount / total) * 100);
     const passed = score >= activeQuiz.passingScore;
 
+    setIsSavingResult(true);
+    setSubmissionError('');
+    try {
+      await onComplete?.({ quizId: activeQuiz.id, score });
+    } catch (error) {
+      setSubmissionError(error.message);
+    } finally {
+      setIsSavingResult(false);
+    }
+
     // Simpan skor terakhir ke daftar kuis
     setQuizzes((prev) =>
       prev.map((q) =>
@@ -261,6 +280,29 @@ export default function StudentQuizView({ initialQuizzes = INITIAL_QUIZZES }) {
   if (viewMode === 'result' && latestResult && activeQuiz) {
     return (
       <div className="max-w-4xl mx-auto space-y-6 pb-10">
+        {submissionError && (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p>Hasil kuis belum tersimpan: {submissionError}</p>
+            <button
+              type="button"
+              disabled={isSavingResult}
+              onClick={async () => {
+                setIsSavingResult(true);
+                setSubmissionError('');
+                try {
+                  await onComplete?.({ quizId: activeQuiz.id, score: latestResult.score });
+                } catch (error) {
+                  setSubmissionError(error.message);
+                } finally {
+                  setIsSavingResult(false);
+                }
+              }}
+              className="mt-2 font-bold underline disabled:opacity-60"
+            >
+              {isSavingResult ? 'Menyimpan...' : 'Coba simpan lagi'}
+            </button>
+          </div>
+        )}
         {/* Kartu Ringkasan Skor Atas */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 md:p-8 flex flex-col sm:flex-row items-center gap-6">
           {/* Lingkaran Skor */}
@@ -853,6 +895,11 @@ export default function StudentQuizView({ initialQuizzes = INITIAL_QUIZZES }) {
                     </span>
                   )}
                 </div>
+                {filteredQuizzes.length === 0 && (
+                  <p className="rounded-xl bg-white px-5 py-8 text-center text-sm text-slate-500">
+                    Belum ada kuis yang tersedia.
+                  </p>
+                )}
 
                 {/* Judul & Topik Materi */}
                 <div>

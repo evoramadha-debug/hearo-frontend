@@ -1,16 +1,7 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
-
-// Daftar email simulasi yang dianggap sudah terdaftar di sistem
-const DEFAULT_REGISTERED_EMAILS = [
-  'dimas.prasetyo@hearo.id',
-  'guru@hearo.id',
-  'siti.rahmawati@hearo.id',
-  'orangtua@hearo.id',
-];
-
-const STORAGE_KEY = 'hearo_registered_emails';
+import { registerUser } from '../services/api';
 
 export default function Register({
   onNavigateToLogin,
@@ -23,13 +14,21 @@ export default function Register({
   const [agreed, setAgreed] = useState(false);
 
   const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    nisn: '',
+    kelas: '',
+    nip: '',
     studentName: '',
+    studentNisn: '',
     email: '',
     password: '',
     passwordConfirmation: '',
   });
 
-  // State pop-up hasil pendaftaran: null | { type: 'success' | 'duplicate', email: string, role: string, studentName?: string }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registrationResult, setRegistrationResult] = useState(null);
+  const [formError, setFormError] = useState('');
   const [modalStatus, setModalStatus] = useState(null);
 
   const tabs = [
@@ -66,75 +65,64 @@ export default function Register({
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((previous) => ({
+      ...previous,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  // Mengambil daftar seluruh email yang sudah terdaftar (bawaan + localStorage)
-  const getRegisteredEmails = () => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.from(
-        new Set([
-          ...DEFAULT_REGISTERED_EMAILS,
-          ...saved.map((item) => item.toLowerCase()),
-        ])
-      );
-    } catch {
-      return DEFAULT_REGISTERED_EMAILS;
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!agreed) return;
-    if (formData.password !== formData.passwordConfirmation) return;
-
-    const normalizedEmail = formData.email.trim().toLowerCase();
-    const existingEmails = getRegisteredEmails();
-
-    // Cek apakah email sudah pernah digunakan
-    if (existingEmails.includes(normalizedEmail)) {
-      setModalStatus({
-        type: 'duplicate',
-        email: normalizedEmail,
-        role: roleConfig[selectedRole].roleDisplay,
-      });
+    setFormError('');
+    if (formData.password !== formData.passwordConfirmation) {
+      setFormError('Konfirmasi kata sandi tidak sama.');
       return;
     }
 
-    // Simpan email baru ke localStorage agar terdeteksi jika didaftarkan ulang
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify([...saved, normalizedEmail])
-      );
-    } catch {
-      // Abaikan jika storage penuh/diblokir
-    }
+    const commonData = {
+      nama: formData.name.trim(),
+      no_telepon: formData.phone.trim(),
+      email: formData.email.trim(),
+      password: formData.password,
+    };
+    const roleData = {
+      MURID: {
+        nisn: formData.nisn.trim(),
+        kelas: formData.kelas.trim(),
+      },
+      GURU: { nip: formData.nip.trim() },
+      'ORANG TUA': {
+        nisn_siswa: formData.studentNisn.trim(),
+        nama_siswa: formData.studentName.trim(),
+      },
+    };
 
-    setModalStatus({
-      type: 'success',
-      email: normalizedEmail,
-      role: roleConfig[selectedRole].roleDisplay,
-      studentName:
-        selectedRole === 'ORANG TUA' ? formData.studentName.trim() : '',
-    });
+    setIsSubmitting(true);
+    try {
+      const result = await registerUser(selectedRole, {
+        ...commonData,
+        ...roleData[selectedRole],
+      });
+      setRegistrationResult(result);
+      setModalStatus({
+        type: 'success',
+        email: commonData.email,
+        role: roleConfig[selectedRole].roleDisplay,
+        studentName: selectedRole === 'ORANG TUA' ? formData.studentName.trim() : '',
+      });
+    } catch (error) {
+      setFormError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleProceedAfterSuccess = () => {
-    const registeredPayload = {
-      email: modalStatus?.email || formData.email.trim(),
-      role: selectedRole,
-      ...(selectedRole === 'ORANG TUA' && {
-        studentName: formData.studentName.trim(),
-      }),
-    };
+    const result = registrationResult;
     setModalStatus(null);
 
-    if (onRegisterSuccess) {
-      onRegisterSuccess(registeredPayload);
-    } else if (onNavigateToLogin) {
+    if (result && onRegisterSuccess) onRegisterSuccess(result);
+    else if (onNavigateToLogin) {
       onNavigateToLogin();
     }
   };
@@ -144,7 +132,7 @@ export default function Register({
     formData.password !== formData.passwordConfirmation;
 
   return (
-    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-6 md:p-10 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans relative overflow-hidden">
       {/* ================= 1. TOP BAR ================= */}
       <div className="w-full max-w-7xl mx-auto flex justify-between items-center relative z-20">
         <button
@@ -153,7 +141,7 @@ export default function Register({
             if (onNavigateToLanding) onNavigateToLanding();
           }}
           title="Kembali ke Beranda"
-          className="focus:outline-none hover:opacity-90 transition origin-left scale-125 md:scale-150 cursor-pointer pointer-events-auto"
+          className="focus:outline-none hover:opacity-90 transition origin-left scale-100 sm:scale-125 md:scale-150 cursor-pointer pointer-events-auto"
         >
           <div className="pointer-events-none">
             <HearoLogo variant="transparent" className="h-12" />
@@ -169,7 +157,7 @@ export default function Register({
       {/* ================= 2. FORM REGISTER CONTAINER ================= */}
       <div className="w-full max-w-[500px] mx-auto my-6 z-10">
         {/* Pill Selector Role */}
-        <div className="bg-white/20 backdrop-blur-md border border-white/30 p-1.5 rounded-full grid grid-cols-3 gap-2 shadow-sm mb-7">
+        <div className="bg-white/20 backdrop-blur-md border border-white/30 p-1.5 rounded-full grid grid-cols-3 gap-1 sm:gap-2 shadow-sm mb-7">
           {tabs.map((role) => {
             const isSelected = selectedRole === role.id;
             return (
@@ -177,7 +165,7 @@ export default function Register({
                 key={role.id}
                 type="button"
                 onClick={() => setSelectedRole(role.id)}
-                className={`py-2.5 px-3 rounded-full text-[11px] font-extrabold tracking-wide uppercase flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                className={`min-w-0 py-2.5 px-1 sm:px-3 rounded-full text-[9px] sm:text-[11px] font-extrabold tracking-wide uppercase flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer ${
                   isSelected
                     ? 'bg-[#102A43] text-white shadow-md'
                     : 'bg-white text-[#102A43] hover:bg-[#EEF4FF]'
@@ -210,24 +198,96 @@ export default function Register({
 
         {/* ================= FORM RINGKAS ================= */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <p role="alert" className="rounded-xl bg-red-100 px-4 py-3 text-xs font-semibold text-red-800">
+              {formError}
+            </p>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+              Nama Lengkap
+            </label>
+            <input
+              type="text"
+              name="name"
+              required
+              maxLength={50}
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Nama lengkap"
+              className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+              Nomor Telepon
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              required
+              maxLength={15}
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="08xxxxxxxxxx"
+              className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+            />
+          </div>
+
+          {selectedRole === 'MURID' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">NISN</label>
+                <input
+                  type="text"
+                  name="nisn"
+                  required
+                  maxLength={25}
+                  value={formData.nisn}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">Kelas</label>
+                <input
+                  type="text"
+                  name="kelas"
+                  required
+                  maxLength={20}
+                  value={formData.kelas}
+                  onChange={handleChange}
+                  placeholder="cth. 10-A"
+                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {selectedRole === 'GURU' && (
+            <div>
+              <label className="block text-xs font-bold text-white mb-1.5 px-0.5">NIP</label>
+              <input
+                type="text"
+                name="nip"
+                required
+                maxLength={25}
+                value={formData.nip}
+                onChange={handleChange}
+                className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+              />
+            </div>
+          )}
+
           {/* Field Khusus Orang Tua: Nama Anak */}
           {selectedRole === 'ORANG TUA' && (
-            <div>
-              <div className="flex justify-between items-center mb-1.5 px-0.5">
-                <label className="text-xs font-bold text-white">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
                   Nama Anak
                 </label>
-                <span className="text-[11px] text-white/80 font-medium">
-                  Wajib diisi
-                </span>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Icon
-                    icon="lucide:contact"
-                    className="w-4 h-4 text-slate-400"
-                  />
-                </div>
                 <input
                   type="text"
                   name="studentName"
@@ -235,7 +295,21 @@ export default function Register({
                   value={formData.studentName}
                   onChange={handleChange}
                   placeholder="cth. Dimas Prasetyo"
-                  className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
+                  NISN Anak
+                </label>
+                <input
+                  type="text"
+                  name="studentNisn"
+                  required
+                  maxLength={25}
+                  value={formData.studentNisn}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
                 />
               </div>
             </div>
@@ -354,19 +428,6 @@ export default function Register({
             )}
           </div>
 
-          {/* Catatan Pengisian Biodata di Pengaturan Profil */}
-          <div className="bg-white/15 border border-white/25 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 text-[11px] text-white/95">
-            <Icon
-              icon="lucide:user-cog"
-              className="w-4 h-4 text-[#FCD34D] shrink-0"
-            />
-            <span>
-              Pengisian data diri lengkap (NIP/NISN, nama, kelas & kontak)
-              dilakukan di menu <strong>Pengaturan Profil</strong> setelah
-              masuk.
-            </span>
-          </div>
-
           {/* Checkbox Syarat & Ketentuan */}
           <div className="flex items-center gap-2.5 pt-1">
             <input
@@ -403,9 +464,10 @@ export default function Register({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3.5 bg-[#102A43] hover:bg-[#0B1E30] text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full py-3.5 bg-[#102A43] hover:bg-[#0B1E30] disabled:opacity-60 text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer"
             >
-              <span>Daftar Sekarang</span>
+              <span>{isSubmitting ? 'Mendaftarkan...' : 'Daftar Sekarang'}</span>
               <Icon icon="lucide:arrow-right" className="w-4 h-4" />
             </button>
           </div>
@@ -452,8 +514,7 @@ export default function Register({
               <Icon icon="lucide:x" className="w-5 h-5" />
             </button>
 
-            {modalStatus.type === 'success' ? (
-              <>
+            <>
                 {/* Ikon Sukses */}
                 <div className="relative w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-5 shadow-md">
                   <Icon icon="lucide:check" className="w-8 h-8 stroke-[3]" />
@@ -486,8 +547,10 @@ export default function Register({
                       </strong>
                     </>
                   ) : null}{' '}
-                  berhasil didaftarkan. Silakan masuk dan lengkapi data profilmu
-                  di menu <strong>Pengaturan Profil</strong>.
+                  berhasil didaftarkan. Anda akan masuk otomatis ke akun.
+                  {selectedRole === 'ORANG TUA' && (
+                    <> Permintaan penghubungan anak menunggu persetujuan guru.</>
+                  )}
                 </p>
 
                 <button
@@ -506,57 +569,7 @@ export default function Register({
                 >
                   Tutup
                 </button>
-              </>
-            ) : (
-              <>
-                {/* Ikon Gagal / Email Duplikat */}
-                <div className="relative w-16 h-16 rounded-full bg-rose-500 text-white flex items-center justify-center mx-auto mb-5 shadow-md">
-                  <Icon
-                    icon="lucide:alert-circle"
-                    className="w-8 h-8 stroke-[2.5]"
-                  />
-                </div>
-
-                <span className="inline-block bg-rose-50 text-rose-700 text-[11px] font-extrabold px-3 py-1 rounded-full mb-2">
-                  Email Sudah Digunakan
-                </span>
-
-                <h2 className="text-2xl font-extrabold text-[#102A43]">
-                  Akun Gagal Terdaftar
-                </h2>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  Email{' '}
-                  <strong className="text-[#102A43]">
-                    {modalStatus.email}
-                  </strong>{' '}
-                  sudah pernah terdaftar sebelumnya. Silakan gunakan alamat
-                  email lain atau langsung masuk menggunakan akun tersebut.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalStatus(null);
-                    if (onNavigateToLogin) onNavigateToLogin();
-                  }}
-                  className="mt-6 w-full bg-[#102A43] hover:bg-[#0B1E30] text-white font-extrabold text-sm py-3.5 rounded-full shadow-md inline-flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <span>Log In dengan Akun Ini</span>
-                  <Icon icon="lucide:arrow-right" className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalStatus(null);
-                    setFormData((prev) => ({ ...prev, email: '' }));
-                  }}
-                  className="mt-3 text-xs font-bold text-slate-500 hover:text-[#102A43] cursor-pointer"
-                >
-                  Gunakan Email Lain
-                </button>
-              </>
-            )}
+            </>
           </div>
         </div>
       )}

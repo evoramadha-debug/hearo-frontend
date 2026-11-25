@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
 import { loginUser } from '../services/api';
+import loginIllustration from '../assets/login-illustration.png';
 
 export default function Login({
   onNavigateToRegister,
@@ -19,6 +20,7 @@ export default function Login({
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage('');
+
     try {
       const authData = await loginUser(email.trim(), password);
       onLoginSuccess?.(authData);
@@ -30,129 +32,167 @@ export default function Login({
   };
 
   return (
-    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans relative overflow-hidden">
-      {/* ================= 1. TOP BAR (LOGO TRANSPARAN & BADGE KANAN) ================= */}
-      <div className="w-full max-w-7xl mx-auto flex justify-between items-center z-10">
-        <button
-          type="button"
-          onClick={onNavigateToLanding}
-          title="Kembali ke Beranda"
-          className="focus:outline-none hover:opacity-90 transition origin-left scale-100 sm:scale-125 md:scale-150 cursor-pointer"
-        >
-          <HearoLogo variant="transparent" className="h-12" />
-        </button>
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#EEF4FF] flex items-center justify-center p-4 sm:p-6 lg:px-10 lg:py-6 font-sans">
+      {/* MAIN SPLIT CARD (FIT TO SCREEN + POPUP ELEVATION) */}
+      <div className="w-full max-w-[1220px] lg:h-full lg:max-h-[680px] bg-white rounded-[32px] border border-white/80 shadow-[0_28px_70px_-12px_rgba(16,42,67,0.24),0_12px_32px_-8px_rgba(0,114,214,0.16)] overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+        {/* ================= KOLOM KIRI: ILUSTRASI & BRANDING ================= */}
+        <div className="relative bg-[#0072D6] px-8 py-7 sm:px-12 lg:py-8 flex flex-col justify-between text-white overflow-hidden">
+          {/* Dekorasi Lingkaran Halus Background */}
+          <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#1E86E3]" />
+          <div className="pointer-events-none absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-[#1E86E3]" />
 
-        <div className="hidden sm:flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 px-4 py-1.5 rounded-full text-white text-xs font-medium">
-          <span className="w-2 h-2 rounded-full bg-[#FCD34D]"></span>
-          <span>Platform Edukasi Inklusif BISINDO & SPOK</span>
-        </div>
-      </div>
-
-      {/* ================= 2. GLASSMORPHISM LOGIN CARD ================= */}
-      <div className="w-full max-w-[540px] mx-auto my-6 sm:my-8 bg-white/25 backdrop-blur-md border border-white/40 rounded-[24px] sm:rounded-[32px] p-5 sm:p-7 md:p-10 shadow-2xl z-10">
-        {/* Judul & Subjudul */}
-        <div className="text-center space-y-1.5 mb-7">
-          <h1 className="text-2xl md:text-[28px] font-extrabold text-[#102A43] tracking-tight">
-            Selamat Datang di Hearo AI
-          </h1>
-          <p className="text-xs md:text-sm text-white/95 font-medium">
-            Masuk untuk mengakses materi visual & latihan bahasa isyarat
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {errorMessage && (
-            <p role="alert" className="rounded-xl bg-red-100 px-4 py-3 text-xs font-semibold text-red-800">
-              {errorMessage}
-            </p>
-          )}
-
-
-          {/* Input Email */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Icon icon="lucide:user" className="w-4 h-4 text-[#007EDA]" />
-            </div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@hearo.id"
-              className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102A43]/30 shadow-sm"
-            />
-          </div>
-
-          {/* Label Lupa Password & Input Password */}
-          <div className="space-y-1.5">
-            <div className="flex justify-start">
-              <button
-                 type="button"
-                  onClick={() => onNavigateToForgotPassword?.(email)}
-                  className="text-xs font-extrabold text-[#102A43] hover:underline cursor-pointer"
-              >
-                  Lupa Password?
-              </button>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Icon icon="lucide:lock" className="w-4 h-4 text-[#007EDA]" />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="password"
-                className="w-full pl-11 pr-11 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#102A43]/30 shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-[#102A43]"
-              >
-                <Icon
-                  icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
-                  className="w-4 h-4"
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Tombol Log In */}
-          <div className="pt-2 flex justify-center">
+          {/* Logo Hearo Kiri Atas */}
+          <div className="relative z-10 shrink-0">
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-56 py-3 bg-[#102A43] hover:bg-[#0B1E30] disabled:opacity-60 text-white text-xs font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95"
+              type="button"
+              onClick={onNavigateToLanding}
+              title="Kembali ke Beranda"
+              className="focus:outline-none hover:opacity-90 transition cursor-pointer inline-flex items-center"
             >
-              <span>{isSubmitting ? 'Memeriksa...' : 'Log In'}</span>
-              <Icon icon="lucide:arrow-right" className="w-4 h-4" />
+              <HearoLogo variant="transparent" />
             </button>
           </div>
-        </form>
 
-        {/* Link Daftar di Bagian Bawah Card */}
-        <div className="mt-8 pt-2 text-center text-xs text-[#102A43] font-medium flex items-center justify-center gap-1">
-          <span>Belum punya akun?</span>
-          <button
-            type="button"
-            onClick={onNavigateToRegister}
-            className="font-extrabold text-[#007EDA] hover:underline inline-flex items-center gap-1 cursor-pointer"
-          >
-            <span>Daftar</span>
-            <Icon
-              icon="lucide:external-link"
-              className="w-3.5 h-3.5 text-[#007EDA]"
+          {/* Ilustrasi Guru, Siswa & Orang Tua (Otomatis menyesuaikan sisa tinggi layar) */}
+          <div className="relative z-10 my-4 lg:my-2 flex-1 min-h-0 flex items-center justify-center">
+            <img
+              src={loginIllustration}
+              alt="Ilustrasi Siswa, Guru, dan Orang Tua Belajar Isyarat Hearo"
+              className="max-h-[250px] sm:max-h-[290px] xl:max-h-[330px] w-auto max-w-full object-contain select-none"
             />
-          </button>
-        </div>
-      </div>
+          </div>
 
-      {/* ================= 3. FOOTER COPYRIGHT ================= */}
-      <div className="text-center text-[11px] text-white/85 font-medium z-10">
-        Hearo AI © 2025 • Media Belajar Aksesibel Inklusif • Didukung Pengenalan
-        BISINDO & SPOK
+          {/* Teks Ajakan Bawah */}
+          <div className="relative z-10 shrink-0 text-center space-y-1.5 max-w-[420px] mx-auto">
+            <h2 className="text-xl sm:text-[24px] font-bold leading-snug tracking-tight text-white">
+              Halo, Teman! Yuk Belajar Isyarat Bareng Hearo
+            </h2>
+            <p className="text-xs sm:text-[13px] text-white/90 font-normal leading-relaxed">
+              Siswa belajar, guru membimbing, orang tua memantau perkembangan.
+            </p>
+          </div>
+        </div>
+
+        {/* ================= KOLOM KANAN: FORM LOGIN ================= */}
+        <div className="bg-white px-8 py-8 sm:px-14 md:px-20 lg:py-8 flex flex-col justify-center">
+          <div className="w-full max-w-[420px] mx-auto">
+            {/* Heading & Subheading */}
+            <div className="text-center space-y-2 mb-6">
+              <h1 className="text-2xl sm:text-[30px] font-extrabold text-[#102A43] leading-tight tracking-tight">
+                Selamat Datang di
+                <br />
+                Hearo AI
+              </h1>
+              <p className="text-xs sm:text-[13px] text-slate-500 font-normal leading-relaxed">
+                Masuk untuk belajar isyarat SIBI, kalimat SPOK, dan kuis seru.
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-semibold text-red-700"
+                >
+                  {errorMessage}
+                </div>
+              )}
+
+              {/* Input Email */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="login-email"
+                  className="block text-[13px] font-bold text-[#102A43]"
+                >
+                  Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon icon="lucide:mail" className="w-4 h-4 text-[#007EDA]" />
+                  </div>
+                  <input
+                    id="login-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nama@email.com"
+                    className="w-full pl-11 pr-4 py-3 bg-[#EEF4FF] border border-[#DCE7F9] rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#007EDA] focus:ring-2 focus:ring-[#007EDA]/20 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Input Kata Sandi */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="login-password"
+                    className="block text-[13px] font-bold text-[#102A43]"
+                  >
+                    Kata Sandi
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToForgotPassword?.(email)}
+                    className="text-[13px] font-semibold text-[#007EDA] hover:underline cursor-pointer"
+                  >
+                    Lupa Kata Sandi?
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Icon icon="lucide:lock" className="w-4 h-4 text-[#007EDA]" />
+                  </div>
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Masukkan kata sandi"
+                    className="w-full pl-11 pr-11 py-3 bg-[#EEF4FF] border border-[#DCE7F9] rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#007EDA] focus:ring-2 focus:ring-[#007EDA]/20 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-[#102A43] cursor-pointer"
+                  >
+                    <Icon
+                      icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
+                      className="w-4 h-4"
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Tombol Log In */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 bg-[#FCD34D] hover:bg-[#FBBF24] disabled:opacity-60 text-[#102A43] text-sm font-bold rounded-full shadow-sm flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer"
+                >
+                  <span>{isSubmitting ? 'Memeriksa...' : 'Log In'}</span>
+                  <Icon icon="lucide:arrow-right" className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+
+            {/* Footer Link Daftar */}
+            <div className="mt-5 text-center text-[13px] text-slate-500 font-medium">
+              <span>Belum punya akun? </span>
+              <button
+                type="button"
+                onClick={onNavigateToRegister}
+                className="font-bold text-[#007EDA] underline hover:text-[#0066B2] cursor-pointer"
+              >
+                Daftar
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

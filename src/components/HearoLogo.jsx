@@ -15,9 +15,9 @@ export default function HearoLogo({ variant = 'card', className = '' }) {
 
   // Mode 2: Transparan tanpa background (Untuk halaman Login/Register)
   return (
-    <div className={`flex items-center gap-3 select-none ${className}`}>
-      <img src={logoIcon} alt="Hearo Icon" className="h-9 md:h-10 w-auto" />
-      <img src={logoText} alt="Hearo Text" className="h-6 md:h-7 w-auto brightness-200" />
+    <div className={`flex items-center gap-1 select-none ${className}`}>
+      <img src={logoIcon} alt="Hearo Icon" className="h-11 md:h-12 w-auto" />
+      <img src={logoText} alt="Hearo Text" className="h-9 md:h-10 w-auto -ml-1 brightness-200" />
     </div>
   );
 }

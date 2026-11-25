@@ -44,12 +44,6 @@ export async function apiRequest(path, { method = 'GET', body, ...options } = {}
   return payload;
 }
 
-const roleEndpoints = {
-  MURID: '/login',
-  GURU: '/guru/login',
-  'ORANG TUA': '/orang-tua/login',
-};
-
 export function normalizeUser(response, roleFallback) {
   const user = response?.data_orang_tua || response?.data || response?.user || {};
   const rawRole = String(user.role || roleFallback || '').toUpperCase().replaceAll('_', ' ');
@@ -69,11 +63,10 @@ export function normalizeUser(response, roleFallback) {
   };
 }
 
-export async function loginUser(email, password, role) {
-  const endpoint = roleEndpoints[role];
-  if (!endpoint) throw new Error('Peran akun tidak dikenali.');
-
-  const response = await apiRequest(endpoint, {
+export async function loginUser(email, password) {
+  // Satu endpoint untuk semua peran. Backend yang mendeteksi apakah akun
+  // tersebut Siswa, Guru, atau Orang Tua.
+  const response = await apiRequest('/login', {
     method: 'POST',
     body: { email, password },
   });
@@ -82,9 +75,14 @@ export async function loginUser(email, password, role) {
     throw new Error('Server tidak mengembalikan token login.');
   }
 
+  const user = normalizeUser(response);
+  if (!user.role) {
+    throw new Error('Server tidak mengembalikan peran akun.');
+  }
+
   return {
     token: response.access_token,
-    user: normalizeUser(response, role),
+    user,
   };
 }
 

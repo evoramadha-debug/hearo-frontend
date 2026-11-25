@@ -9,40 +9,18 @@ export default function Login({
   onNavigateToForgotPassword,
   onLoginSuccess,
 }) {
-  const [selectedRole, setSelectedRole] = useState('GURU');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const roles = [
-    {
-      id: 'GURU',
-      label: 'GURU',
-      bgBox: 'bg-[#F5EFE6]',
-      icon: 'noto:woman-teacher-light-skin-tone',
-    },
-    {
-      id: 'MURID',
-      label: 'MURID',
-      bgBox: 'bg-[#EEF4FF]',
-      icon: 'noto:student-light-skin-tone',
-    },
-    {
-      id: 'ORANG TUA',
-      label: 'ORANG TUA',
-      bgBox: 'bg-[#F3E8FF]',
-      icon: 'noto:family-man-woman-girl',
-    },
-  ];
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      const authData = await loginUser(email.trim(), password, selectedRole);
+      const authData = await loginUser(email.trim(), password);
       onLoginSuccess?.(authData);
     } catch (error) {
       setErrorMessage(error.message);
@@ -88,69 +66,7 @@ export default function Login({
               {errorMessage}
             </p>
           )}
-          {/* Header Pilihan Role + Badge Role Terpilih */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5 text-[#102A43] text-[11px] font-extrabold uppercase tracking-wider">
-                <Icon icon="lucide:user-check" className="w-3.5 h-3.5" />
-                <span>PILIH PERAN PENGGUNA</span>
-              </div>
 
-              {/* Badge Dinamis Role Terpilih */}
-              <div className="bg-white/20 border border-white/30 px-3 py-1 rounded-full text-[10px] font-medium text-white">
-                Role Terpilih:{' '}
-                <span className="font-extrabold uppercase">{selectedRole}</span>
-              </div>
-            </div>
-
-            {/* Grid 3 Kartu Role */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
-              {roles.map((role) => {
-                const isSelected = selectedRole === role.id;
-                return (
-                  <button
-                    type="button"
-                    key={role.id}
-                    onClick={() => setSelectedRole(role.id)}
-                    className={`relative bg-white rounded-2xl p-2 sm:p-3 flex flex-col items-center justify-between transition-all duration-200 ${
-                      isSelected
-                        ? 'ring-[3px] ring-[#007EDA] shadow-lg scale-[1.02]'
-                        : 'border border-transparent opacity-95 hover:opacity-100 hover:shadow-md'
-                    }`}
-                  >
-                    {/* Ikon Centang Biru di Pojok Kanan Atas saat Terpilih */}
-                    {isSelected && (
-                      <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#007EDA] text-white rounded-full flex items-center justify-center shadow-md border-2 border-white">
-                        <Icon
-                          icon="lucide:check"
-                          className="w-3.5 h-3.5 stroke-[3]"
-                        />
-                      </span>
-                    )}
-
-                    {/* Kotak Ilustrasi Karakter */}
-                    <div
-                      className={`w-full aspect-square ${role.bgBox} rounded-xl flex items-center justify-center p-2 mb-2.5`}
-                    >
-                      <Icon
-                        icon={role.icon}
-                        className="w-12 h-12 md:w-14 md:h-14"
-                      />
-                    </div>
-
-                    {/* Label Role */}
-                    <span
-                      className={`text-[10px] sm:text-[11px] font-extrabold tracking-wide uppercase text-center ${
-                        isSelected ? 'text-[#007EDA]' : 'text-[#102A43]'
-                      }`}
-                    >
-                      {role.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* Input Email */}
           <div className="relative">
@@ -172,7 +88,7 @@ export default function Login({
             <div className="flex justify-start">
               <button
                  type="button"
-                  onClick={() => onNavigateToForgotPassword?.(email, selectedRole)}
+                  onClick={() => onNavigateToForgotPassword?.(email)}
                   className="text-xs font-extrabold text-[#102A43] hover:underline cursor-pointer"
               >
                   Lupa Password?

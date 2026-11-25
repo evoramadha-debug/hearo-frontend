@@ -174,8 +174,8 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
               <span>JEMBATAN KOMUNIKASI TANPA BATAS.</span>
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.2] text-white">
-              Belajar Bahasa Indonesia dengan Mudah untuk Teman Tunarungu
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-[1.2] text-white">
+              Belajar Sistem Bahasa Isyarat Bahasa Indonesia dengan Mudah untuk Teman Tunarungu
             </h1>
 
             <p className="text-sm md:text-base text-white/90 leading-relaxed font-normal max-w-xl">

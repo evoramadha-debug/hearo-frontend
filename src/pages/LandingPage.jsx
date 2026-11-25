@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import logoIcon from '../assets/logo-icon.svg';
 
 export default function LandingPage({ onNavigateToLogin, onNavigateToRegister }) {
-  const [activeTab, setActiveTab] = useState('SIBI'); // SIBI / BISINDO
+  const [activeTab] = useState('SIBI'); // SIBI / BISINDO
   const [activeNav, setActiveNav] = useState('Beranda');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -217,34 +217,6 @@ export default function LandingPage({ onNavigateToLogin, onNavigateToRegister })
         <h2 className="text-3xl md:text-4xl font-extrabold text-[#102A43] mb-3">
           Kamus Bahasa Isyarat
         </h2>
-        <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto mb-8 font-medium">
-          Pilih jenis bahasa isyarat, lalu klik huruf atau angka untuk melihat gerakan tangannya secara instan.
-        </p>
-
-        {/* Tab SIBI / BISINDO */}
-        <div className="inline-flex bg-[#E8EEF5] p-1.5 rounded-2xl mb-10 border border-slate-200">
-          <button
-            onClick={() => setActiveTab('SIBI')}
-            className={`px-8 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'SIBI'
-                ? 'bg-[#007EDA] text-white shadow-md'
-                : 'text-slate-600 hover:text-[#007EDA]'
-            }`}
-          >
-            SIBI
-          </button>
-          <button
-            onClick={() => setActiveTab('BISINDO')}
-            className={`px-8 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              activeTab === 'BISINDO'
-                ? 'bg-[#007EDA] text-white shadow-md'
-                : 'text-slate-600 hover:text-[#007EDA]'
-            }`}
-          >
-            BISINDO
-          </button>
-        </div>
-
         {/* Grid Karakter Box */}
         <div className="bg-white rounded-[32px] p-6 md:p-10 border border-slate-100 shadow-xl text-left max-w-5xl mx-auto">
           <div className="flex items-center gap-2 text-xs font-bold text-[#102A43] mb-6">

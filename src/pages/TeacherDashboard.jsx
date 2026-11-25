@@ -4,6 +4,13 @@ import HearoLogo from '../components/HearoLogo';
 import { apiRequest } from '../services/api';
 import { adaptMaterial } from '../services/adapters';
 
+const SPOK_TAG_COLORS = {
+  S: 'bg-[#007EDA]',
+  P: 'bg-[#16A34A]',
+  O: 'bg-[#EA580C]',
+  K: 'bg-[#9333EA]',
+};
+
 // ============================================================================
 // DATA AWAL (DUMMY STATE UNTUK SIMULASI INTERAKTIF FRONTEND)
 // ============================================================================
@@ -335,6 +342,7 @@ export default function TeacherDashboard({ user, onLogout }) {
   // State Beranda (Hearo Refine Studio & Tabel Hasil Kuis)
   const [signInput, setSignInput] = useState('');
   const [refinedResult, setRefinedResult] = useState(null);
+  const [isRefining, setIsRefining] = useState(false);
   const [quizResults, setQuizResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('SEMUA');
@@ -345,7 +353,7 @@ export default function TeacherDashboard({ user, onLogout }) {
   const [teacherNoteDraft, setTeacherNoteDraft] = useState('');
 
   // State Kamus Bahasa Isyarat
-  const [signMode, setSignMode] = useState('SIBI'); // 'SIBI' | 'BISINDO'
+  const [signMode] = useState('SIBI'); // 'SIBI' | 'BISINDO'
   const [selectedChar, setSelectedChar] = useState(null);
   const [dictionaryEntries, setDictionaryEntries] = useState([]);
 
@@ -471,22 +479,23 @@ export default function TeacherDashboard({ user, onLogout }) {
   const handleRefineSentence = async () => {
     const raw = signInput.trim();
     if (!raw) {
+      setRefinedResult(null);
       setApiError('Masukkan kalimat sebelum menjalankan Hearo Refine.');
       return;
     }
+    setIsRefining(true);
+    setRefinedResult(null);
+    setApiError('');
     try {
-      const response = await apiRequest('/translate', {
+      const response = await apiRequest('/spok/refine', {
         method: 'POST',
-        body: { teks: raw },
+        body: { kalimat: raw },
       });
-      setRefinedResult({
-        input: response.data.teks_input,
-        output: response.data.hasil_translate,
-        pattern: 'Hasil simulasi dari layanan backend.',
-      });
-      setApiError('');
+      setRefinedResult(response.data);
     } catch (error) {
       setApiError(`Hearo Refine gagal: ${error.message}`);
+    } finally {
+      setIsRefining(false);
     }
   };
 
@@ -1205,30 +1214,92 @@ export default function TeacherDashboard({ user, onLogout }) {
                     <span>
                       Format Isyarat Terdeteksi:{' '}
                       <strong className="text-[#007EDA]">
-                        Subjek - Keterangan - Predikat (Non-baku)
+                        {refinedResult
+                          ? refinedResult.detectedFormat
+                          : 'Belum dianalisis'}
                       </strong>
                     </span>
                   </div>
 
                   {refinedResult && (
-                    <div className="bg-[#EEF4FF] border border-sky-200 rounded-xl p-4 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-bold text-[#007EDA]">
-                        <span>HASIL KALIMAT BAKU (SPOK):</span>
-                        <span>{refinedResult.pattern}</span>
+                    <div className="bg-[#FEF9C3] border border-[#FDE047] rounded-xl p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span
+                          className={`bg-white border text-[11px] font-extrabold px-3 py-1 rounded-full inline-flex items-center gap-1.5 ${
+                            refinedResult.statusBaku
+                              ? 'border-emerald-400 text-emerald-600'
+                              : 'border-sky-400 text-sky-700'
+                          }`}
+                        >
+                          <Icon
+                            icon={
+                              refinedResult.statusBaku
+                                ? 'lucide:check'
+                                : 'lucide:arrow-right'
+                            }
+                            className="w-3.5 h-3.5 stroke-[2.5]"
+                          />
+                          <span>
+                            {refinedResult.statusBaku
+                              ? 'Susunan sudah SPOK'
+                              : 'Susunan disesuaikan ke SPOK'}
+                          </span>
+                        </span>
+                        <span className="bg-[#FDE68A] border border-amber-300/80 text-[#92400E] text-[11px] font-bold px-3 py-1 rounded-full">
+                          {refinedResult.message}
+                        </span>
                       </div>
-                      <p className="text-sm font-extrabold text-[#102A43]">
-                        “{refinedResult.output}”
-                      </p>
+
+                      <div className="bg-[#FEFCE8]/90 border border-[#FDE047] rounded-lg p-4 space-y-2">
+                        <div className="text-[10px] font-bold tracking-wider uppercase text-slate-500 flex flex-wrap items-center gap-1.5">
+                          <span>INPUT ASLI:</span>
+                          <span className="font-medium line-through text-slate-400 normal-case">
+                            {refinedResult.original}
+                          </span>
+                        </div>
+                        <p className="text-lg md:text-xl font-extrabold text-[#102A43] leading-snug">
+                          {refinedResult.corrected}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          {(refinedResult.tags || []).map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className={`${SPOK_TAG_COLORS[tag.role] || 'bg-slate-500'} text-white text-[10px] font-bold px-2.5 py-1 rounded-md`}
+                            >
+                              {tag.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {refinedResult.missing?.length > 0 && (
+                        <p className="text-[11px] font-semibold text-amber-800">
+                          Unsur belum lengkap:{' '}
+                          {refinedResult.missing.join(', ')}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {(refinedResult.words || []).map((word, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-white border border-[#FCD34D] text-[#102A43] text-[11px] font-extrabold px-3 py-1.5 rounded-lg"
+                          >
+                            {word}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   <button
                     type="button"
                     onClick={handleRefineSentence}
-                    className="w-full bg-[#007EDA] hover:bg-[#0068B8] text-white font-bold text-xs md:text-sm py-3.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer"
+                    disabled={isRefining}
+                    className="w-full bg-[#007EDA] hover:bg-[#0068B8] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs md:text-sm py-3.5 rounded-xl shadow-xs inline-flex items-center justify-center gap-2 transition cursor-pointer"
                   >
                     <Icon icon="lucide:sparkles" className="w-4 h-4" />
-                    <span>Perbaiki Kalimat</span>
+                    <span>{isRefining ? 'Memproses...' : 'Perbaiki Kalimat'}</span>
                   </button>
                 </div>
               </section>
@@ -1622,49 +1693,6 @@ export default function TeacherDashboard({ user, onLogout }) {
             <div className="space-y-6">
               {/* Bar Switcher SIBI / BISINDO & Info */}
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 md:p-5 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-                <div className="bg-[#EEF4FF] p-1.5 rounded-2xl inline-flex items-center gap-1 self-start">
-                  <button
-                    type="button"
-                    onClick={() => setSignMode('SIBI')}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-2 transition cursor-pointer ${
-                      signMode === 'SIBI'
-                        ? 'bg-[#0068B8] text-white shadow-xs'
-                        : 'text-[#102A43] hover:bg-white/60'
-                    }`}
-                  >
-                    {signMode === 'SIBI' && (
-                      <Icon
-                        icon="lucide:check-circle-2"
-                        className="w-4 h-4 shrink-0"
-                      />
-                    )}
-                    <span className="text-left leading-tight">
-                      SIBI (Standar
-                      <br className="hidden sm:inline" /> Sekolah)
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSignMode('BISINDO')}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-extrabold inline-flex items-center gap-2 transition cursor-pointer ${
-                      signMode === 'BISINDO'
-                        ? 'bg-[#0068B8] text-white shadow-xs'
-                        : 'text-[#102A43] hover:bg-white/60'
-                    }`}
-                  >
-                    {signMode === 'BISINDO' && (
-                      <Icon
-                        icon="lucide:check-circle-2"
-                        className="w-4 h-4 shrink-0"
-                      />
-                    )}
-                    <span className="text-left leading-tight">
-                      BISINDO (Alami
-                      <br className="hidden sm:inline" /> Tuli)
-                    </span>
-                  </button>
-                </div>
 
                 <div className="bg-[#EEF4FF] border border-sky-100 rounded-xl px-4 py-3 flex items-center gap-2.5 text-xs text-slate-600 max-w-md">
                   <Icon
@@ -1674,8 +1702,6 @@ export default function TeacherDashboard({ user, onLogout }) {
                   <span>
                     <strong className="text-[#102A43]">SIBI</strong> cocok untuk
                     ejaan formal &amp; ujian sekolah;{' '}
-                    <strong className="text-[#102A43]">BISINDO</strong> digunakan
-                    sehari-hari.
                   </span>
                 </div>
               </div>

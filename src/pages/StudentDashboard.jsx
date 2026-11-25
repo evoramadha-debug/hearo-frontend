@@ -865,53 +865,6 @@ export default function StudentDashboard({ user, onLogout }) {
             <div className="space-y-8 pb-6">
               {/* Top Mode Switcher & Info Card */}
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 md:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Segmented Toggle SIBI vs BISINDO */}
-                <div className="bg-[#EEF4FF] p-1.5 rounded-xl inline-flex items-center gap-1 self-start">
-                  <button
-                    type="button"
-                    onClick={() => setDictionaryType('SIBI')}
-                    className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                      dictionaryType === 'SIBI'
-                        ? 'bg-[#007EDA] text-white shadow-xs'
-                        : 'text-[#102A43] hover:bg-white/60'
-                    }`}
-                  >
-                    {dictionaryType === 'SIBI' && (
-                      <Icon
-                        icon="lucide:check-circle-2"
-                        className="w-4 h-4 shrink-0"
-                      />
-                    )}
-                    <span className="leading-tight text-left">
-                      SIBI (Standar
-                      <br className="hidden sm:inline" /> Sekolah)
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDictionaryType('BISINDO');
-                      setSelectedChar(null);
-                    }}
-                    className={`px-5 py-2.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-                      dictionaryType === 'BISINDO'
-                        ? 'bg-[#007EDA] text-white shadow-xs'
-                        : 'text-[#102A43] hover:bg-white/60'
-                    }`}
-                  >
-                    {dictionaryType === 'BISINDO' && (
-                      <Icon
-                        icon="lucide:check-circle-2"
-                        className="w-4 h-4 shrink-0"
-                      />
-                    )}
-                    <span className="leading-tight text-left">
-                      BISINDO (Alami
-                      <br className="hidden sm:inline" /> Tuli)
-                    </span>
-                  </button>
-                </div>
 
                 {/* Tips Banner Kanan */}
                 <div className="bg-[#EEF4FF] border border-slate-200/60 px-4 py-3 rounded-xl flex items-center gap-2.5 text-xs text-slate-600 max-w-md">
@@ -920,8 +873,7 @@ export default function StudentDashboard({ user, onLogout }) {
                     className="w-4 h-4 text-[#007EDA] shrink-0"
                   />
                   <span className="leading-relaxed">
-                    SIBI cocok untuk ejaan formal & ujian sekolah; BISINDO
-                    digunakan sehari-hari.
+                    SIBI cocok untuk ejaan formal & ujian sekolah.
                   </span>
                 </div>
               </div>

@@ -2,577 +2,580 @@ import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
 import HearoLogo from '../components/HearoLogo';
 import { registerUser } from '../services/api';
+import registerSiswaIllustration from '../assets/register-siswa.png';
+import registerGuruIllustration from '../assets/register-guru.png';
+import registerOrangTuaIllustration from '../assets/register-orangtua.png';
+
+const ROLE_CONFIG = {
+  siswa: {
+    id: 'siswa',
+    label: 'Siswa',
+    icon: 'lucide:user-check',
+    illustration: registerSiswaIllustration,
+    illustrationAlt: 'Ilustrasi Siswa Belajar Bahasa Isyarat Hearo',
+    leftTitle: 'Daftar Akun Siswa',
+    leftSubtitle:
+      'Belajar SIBI dan SPOK dengan seru, lalu lihat sendiri capaian belajarmu.',
+    formTitle: 'Daftar Akun Siswa',
+    formSubtitle: 'Isi data dirimu untuk mulai belajar bahasa isyarat.',
+    nameLabel: 'Nama Lengkap',
+    namePlaceholder: 'Nama lengkapmu',
+    emailPlaceholder: 'nama@email.com',
+  },
+  guru: {
+    id: 'guru',
+    label: 'Guru',
+    icon: 'lucide:presentation',
+    illustration: registerGuruIllustration,
+    illustrationAlt: 'Ilustrasi Guru Mendampingi Siswa Hearo',
+    leftTitle: 'Daftar Akun Guru',
+    leftSubtitle:
+      'Buka kamus SIBI kapan saja, lalu pantau capaian dan riwayat belajar siswa.',
+    formTitle: 'Daftar Akun Guru',
+    formSubtitle: 'Bergabung untuk mendampingi siswa belajar bahasa isyarat.',
+    nameLabel: 'Nama Lengkap (dengan gelar)',
+    namePlaceholder: 'Contoh: Siti Aminah, S.Pd.',
+    emailPlaceholder: 'nama@sekolah.sch.id',
+  },
+  orang_tua: {
+    id: 'orang_tua',
+    label: 'Orang Tua',
+    icon: 'lucide:users',
+    illustration: registerOrangTuaIllustration,
+    illustrationAlt: 'Ilustrasi Orang Tua Memantau Anak Hearo',
+    leftTitle: 'Daftar Akun Orang Tua',
+    leftSubtitle: 'Ikuti capaian belajar bahasa isyarat anak dari rumah.',
+    formTitle: 'Daftar Akun Orang Tua',
+    formSubtitle:
+      'NISN dan nama anak dipakai untuk menghubungkan akun Anda dengan akun anak.',
+    nameLabel: 'Nama Lengkap',
+    namePlaceholder: 'Nama lengkap Anda',
+    emailPlaceholder: 'nama@email.com',
+  },
+};
 
 export default function Register({
   onNavigateToLogin,
   onNavigateToLanding,
   onRegisterSuccess,
 }) {
-  const [selectedRole, setSelectedRole] = useState('GURU');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [role, setRole] = useState('siswa');
+
+  // Form states
+  const [name, setName] = useState('');
+  const [nisn, setNisn] = useState('');
+  const [nip, setNip] = useState('');
+  const [childNisn, setChildNisn] = useState('');
+  const [childName, setChildName] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    nisn: '',
-    kelas: '',
-    nip: '',
-    studentName: '',
-    studentNisn: '',
-    email: '',
-    password: '',
-    passwordConfirmation: '',
-  });
-
+  // UI states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [registrationResult, setRegistrationResult] = useState(null);
-  const [formError, setFormError] = useState('');
-  const [modalStatus, setModalStatus] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const tabs = [
-    { id: 'GURU', label: 'GURU', icon: 'lucide:graduation-cap' },
-    { id: 'MURID', label: 'MURID', icon: 'lucide:smile' },
-    { id: 'ORANG TUA', label: 'ORANG TUA', icon: 'lucide:users' },
-  ];
+  const currentRole = ROLE_CONFIG[role];
 
-  const roleConfig = {
-    GURU: {
-      title: 'Daftar Akun Guru',
-      subtitle:
-        'Bergabung untuk mengajar bahasa isyarat & memantau perkembangan siswa',
-      emailLabel: 'Email Guru',
-      emailPlaceholder: 'guru@sekolah.sch.id atau nama@hearo.id',
-      roleDisplay: 'Guru',
-    },
-    MURID: {
-      title: 'Daftar Akun Murid',
-      subtitle:
-        'Mulai belajar bahasa isyarat BISINDO dan struktur kalimat SPOK secara interaktif',
-      emailLabel: 'Email Murid',
-      emailPlaceholder: 'murid@sekolah.sch.id atau nama@email.com',
-      roleDisplay: 'Murid',
-    },
-    'ORANG TUA': {
-      title: 'Daftar Akun Orang Tua',
-      subtitle:
-        'Dampingi perkembangan belajar bahasa isyarat & struktur kalimat anak secara berkala',
-      emailLabel: 'Email Orang Tua / Wali',
-      emailPlaceholder: 'orangtua@email.com atau nama@email.com',
-      roleDisplay: 'Orang Tua',
-    },
-  };
-
-  const handleChange = (e) => {
-    setFormData((previous) => ({
-      ...previous,
-      [e.target.name]: e.target.value,
-    }));
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    setErrorMessage('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormError('');
-    if (formData.password !== formData.passwordConfirmation) {
-      setFormError('Konfirmasi kata sandi tidak sama.');
+    setErrorMessage('');
+
+    if (password.length < 8) {
+      setErrorMessage('Kata sandi minimal harus 8 karakter.');
       return;
     }
 
-    const commonData = {
-      nama: formData.name.trim(),
-      no_telepon: formData.phone.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-    };
-    const roleData = {
-      MURID: {
-        nisn: formData.nisn.trim(),
-        kelas: formData.kelas.trim(),
-      },
-      GURU: { nip: formData.nip.trim() },
-      'ORANG TUA': {
-        nisn_siswa: formData.studentNisn.trim(),
-        nama_siswa: formData.studentName.trim(),
-      },
-    };
+    if (password !== confirmPassword) {
+      setErrorMessage('Konfirmasi kata sandi tidak cocok.');
+      return;
+    }
+
+    if (!agreed) {
+      setErrorMessage(
+        'Silakan centang persetujuan Ketentuan Layanan dan Kebijakan Privasi.'
+      );
+      return;
+    }
 
     setIsSubmitting(true);
+
+    const apiRoleMap = {
+      siswa: 'MURID',
+      guru: 'GURU',
+      orang_tua: 'ORANG TUA',
+    };
+
     try {
-      const result = await registerUser(selectedRole, {
-        ...commonData,
-        ...roleData[selectedRole],
-      });
-      setRegistrationResult(result);
-      setModalStatus({
-        type: 'success',
-        email: commonData.email,
-        role: roleConfig[selectedRole].roleDisplay,
-        studentName: selectedRole === 'ORANG TUA' ? formData.studentName.trim() : '',
-      });
+      const apiRole = apiRoleMap[role];
+      const payload = {
+        nama: name.trim(),
+        email: email.trim(),
+        no_telepon: whatsapp.trim(),
+        password,
+        password_confirmation: confirmPassword,
+        ...(role === 'siswa' && { nisn: nisn.trim() }),
+        ...(role === 'guru' && { nip: nip.trim() }),
+        ...(role === 'orang_tua' && {
+          nisn_anak: childNisn.trim(),
+          nama_anak: childName.trim(),
+        }),
+      };
+
+      const result = await registerUser(apiRole, payload);
+      onRegisterSuccess?.(result);
     } catch (error) {
-      setFormError(error.message);
+      setErrorMessage(error.message || 'Gagal mendaftarkan akun. Coba lagi.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleProceedAfterSuccess = () => {
-    const result = registrationResult;
-    setModalStatus(null);
-
-    if (result && onRegisterSuccess) onRegisterSuccess(result);
-    else if (onNavigateToLogin) {
-      onNavigateToLogin();
-    }
-  };
-
-  const passwordsDoNotMatch =
-    formData.passwordConfirmation !== '' &&
-    formData.password !== formData.passwordConfirmation;
+  const inputBaseClass =
+    'w-full pl-10 pr-3.5 py-2.5 bg-[#F8FAFC] border border-[#DCE7F9] rounded-xl text-xs sm:text-[13px] text-[#102A43] placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#007EDA] focus:ring-2 focus:ring-[#007EDA]/20 transition';
 
   return (
-    <div className="min-h-screen bg-[#007EDA] flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans relative overflow-hidden">
-      {/* ================= 1. TOP BAR ================= */}
-      <div className="w-full max-w-7xl mx-auto flex justify-between items-center relative z-20">
-        <button
-          type="button"
-          onClick={() => {
-            if (onNavigateToLanding) onNavigateToLanding();
-          }}
-          title="Kembali ke Beranda"
-          className="focus:outline-none hover:opacity-90 transition origin-left scale-100 sm:scale-125 md:scale-150 cursor-pointer pointer-events-auto"
-        >
-          <div className="pointer-events-none">
-            <HearoLogo variant="transparent" className="h-12" />
-          </div>
-        </button>
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#EEF4FF] flex items-center justify-center p-4 sm:p-6 lg:px-10 lg:py-5 font-sans">
+      {/* MAIN SPLIT CARD (FIT TO SCREEN + POPUP ELEVATION) */}
+      <div className="w-full max-w-[1220px] lg:h-full lg:max-h-[700px] bg-white rounded-[32px] border border-white/80 shadow-[0_28px_70px_-12px_rgba(16,42,67,0.24),0_12px_32px_-8px_rgba(0,126,218,0.16)] overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+        {/* ================= KOLOM KIRI: ILUSTRASI & BRANDING DINAMIS ================= */}
+        <div className="relative bg-[#007EDA] px-8 py-7 sm:px-12 lg:py-8 flex flex-col justify-between text-white overflow-hidden">
+          {/* Dekorasi Bubble Lingkaran */}
+          <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#99CEF4]" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 w-44 h-44 rounded-full bg-[#99CEF4]" />
 
-        <div className="hidden sm:flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 px-4 py-1.5 rounded-full text-white text-xs font-medium">
-          <Icon icon="lucide:sparkles" className="w-3.5 h-3.5 text-[#FCD34D]" />
-          <span>Platform Edukasi Inklusif BISINDO & SPOK</span>
-        </div>
-      </div>
-
-      {/* ================= 2. FORM REGISTER CONTAINER ================= */}
-      <div className="w-full max-w-[500px] mx-auto my-6 z-10">
-        {/* Pill Selector Role */}
-        <div className="bg-white/20 backdrop-blur-md border border-white/30 p-1.5 rounded-full grid grid-cols-3 gap-1 sm:gap-2 shadow-sm mb-7">
-          {tabs.map((role) => {
-            const isSelected = selectedRole === role.id;
-            return (
-              <button
-                key={role.id}
-                type="button"
-                onClick={() => setSelectedRole(role.id)}
-                className={`min-w-0 py-2.5 px-1 sm:px-3 rounded-full text-[9px] sm:text-[11px] font-extrabold tracking-wide uppercase flex items-center justify-center gap-1 sm:gap-1.5 transition-all duration-200 cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#102A43] text-white shadow-md'
-                    : 'bg-white text-[#102A43] hover:bg-[#EEF4FF]'
-                }`}
-              >
-                <Icon
-                  icon={role.icon}
-                  className={`w-4 h-4 shrink-0 ${
-                    isSelected ? 'text-[#FCD34D]' : 'text-[#102A43]'
-                  }`}
-                />
-                <span className="truncate">{role.label}</span>
-                {isSelected && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FCD34D] shrink-0"></span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Judul & Subjudul Dinamis */}
-        <div className="text-center space-y-1.5 mb-7">
-          <h1 className="text-2xl md:text-[30px] font-extrabold text-white tracking-tight">
-            {roleConfig[selectedRole].title}
-          </h1>
-          <p className="text-xs md:text-sm text-white/90 font-normal max-w-md mx-auto leading-relaxed">
-            {roleConfig[selectedRole].subtitle}
-          </p>
-        </div>
-
-        {/* ================= FORM RINGKAS ================= */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {formError && (
-            <p role="alert" className="rounded-xl bg-red-100 px-4 py-3 text-xs font-semibold text-red-800">
-              {formError}
-            </p>
-          )}
-
-          <div>
-            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
-              Nama Lengkap
-            </label>
-            <input
-              type="text"
-              name="name"
-              required
-              maxLength={50}
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Nama lengkap"
-              className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
-              Nomor Telepon
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              required
-              maxLength={15}
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="08xxxxxxxxxx"
-              className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-            />
-          </div>
-
-          {selectedRole === 'MURID' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">NISN</label>
-                <input
-                  type="text"
-                  name="nisn"
-                  required
-                  maxLength={25}
-                  value={formData.nisn}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">Kelas</label>
-                <input
-                  type="text"
-                  name="kelas"
-                  required
-                  maxLength={20}
-                  value={formData.kelas}
-                  onChange={handleChange}
-                  placeholder="cth. 10-A"
-                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          {selectedRole === 'GURU' && (
-            <div>
-              <label className="block text-xs font-bold text-white mb-1.5 px-0.5">NIP</label>
-              <input
-                type="text"
-                name="nip"
-                required
-                maxLength={25}
-                value={formData.nip}
-                onChange={handleChange}
-                className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-              />
-            </div>
-          )}
-
-          {/* Field Khusus Orang Tua: Nama Anak */}
-          {selectedRole === 'ORANG TUA' && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
-                  Nama Anak
-                </label>
-                <input
-                  type="text"
-                  name="studentName"
-                  required
-                  value={formData.studentName}
-                  onChange={handleChange}
-                  placeholder="cth. Dimas Prasetyo"
-                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
-                  NISN Anak
-                </label>
-                <input
-                  type="text"
-                  name="studentNisn"
-                  required
-                  maxLength={25}
-                  value={formData.studentNisn}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* 1. Email */}
-          <div>
-            <div className="flex justify-between items-center mb-1.5 px-0.5">
-              <label className="text-xs font-bold text-white">
-                {roleConfig[selectedRole].emailLabel}
-              </label>
-              <span className="text-[11px] text-white/80 font-medium">
-                Wajib diisi
-              </span>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Icon icon="lucide:mail" className="w-4 h-4 text-slate-400" />
-              </div>
-              <input
-                type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder={roleConfig[selectedRole].emailPlaceholder}
-                className="w-full pl-11 pr-4 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-              />
-            </div>
-          </div>
-
-          {/* 2. Kata Sandi */}
-          <div>
-            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
-              Kata Sandi
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Icon icon="lucide:lock" className="w-4 h-4 text-slate-400" />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                required
-                minLength={8}
-                maxLength={50}
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••••••"
-                className="w-full pl-11 pr-11 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-[#102A43] cursor-pointer"
-                aria-label="Tampilkan atau sembunyikan kata sandi"
-              >
-                <Icon
-                  icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
-                  className="w-4 h-4"
-                />
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-white/85">
-              <Icon icon="lucide:info" className="w-3.5 h-3.5 shrink-0" />
-              <span>Minimal 8, maksimal 50 karakter</span>
-            </div>
-          </div>
-
-          {/* 3. Konfirmasi Kata Sandi */}
-          <div>
-            <label className="block text-xs font-bold text-white mb-1.5 px-0.5">
-              Konfirmasi Kata Sandi
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Icon icon="lucide:lock" className="w-4 h-4 text-slate-400" />
-              </div>
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                name="passwordConfirmation"
-                required
-                minLength={8}
-                maxLength={50}
-                value={formData.passwordConfirmation}
-                onChange={handleChange}
-                placeholder="Ulangi kata sandi"
-                aria-invalid={passwordsDoNotMatch}
-                aria-describedby={
-                  passwordsDoNotMatch ? 'password-mismatch' : undefined
-                }
-                className={`w-full pl-11 pr-11 py-3.5 bg-white rounded-xl text-sm text-[#102A43] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FCD34D] shadow-sm ${
-                  passwordsDoNotMatch ? 'ring-2 ring-red-400' : ''
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-[#102A43] cursor-pointer"
-                aria-label="Tampilkan atau sembunyikan konfirmasi kata sandi"
-              >
-                <Icon
-                  icon={showConfirmPassword ? 'lucide:eye-off' : 'lucide:eye'}
-                  className="w-4 h-4"
-                />
-              </button>
-            </div>
-            {passwordsDoNotMatch && (
-              <p
-                id="password-mismatch"
-                className="mt-1.5 text-[11px] font-medium text-red-100"
-                role="alert"
-              >
-                Kata sandi tidak sama.
-              </p>
-            )}
-          </div>
-
-          {/* Checkbox Syarat & Ketentuan */}
-          <div className="flex items-center gap-2.5 pt-1">
-            <input
-              id="terms"
-              type="checkbox"
-              required
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              className="w-4 h-4 rounded border-white text-[#102A43] focus:ring-0 cursor-pointer accent-[#102A43]"
-            />
-            <label
-              htmlFor="terms"
-              className="text-xs text-white/90 select-none cursor-pointer"
-            >
-              Saya menyetujui{' '}
-              <a
-                href="#terms"
-                className="font-bold underline hover:text-[#FCD34D]"
-              >
-                Ketentuan Layanan
-              </a>{' '}
-              &{' '}
-              <a
-                href="#privacy"
-                className="font-bold underline hover:text-[#FCD34D]"
-              >
-                Kebijakan Privasi
-              </a>{' '}
-              Hearo AI
-            </label>
-          </div>
-
-          {/* Tombol Daftar Sekarang */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3.5 bg-[#102A43] hover:bg-[#0B1E30] disabled:opacity-60 text-white text-sm font-bold rounded-full shadow-lg flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer"
-            >
-              <span>{isSubmitting ? 'Mendaftarkan...' : 'Daftar Sekarang'}</span>
-              <Icon icon="lucide:arrow-right" className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
-
-        {/* Link Sudah Punya Akun? Log In */}
-        <div className="mt-6 text-center text-xs text-white/90 font-medium">
-          Sudah punya akun?{' '}
-          <button
-            type="button"
-            onClick={onNavigateToLogin}
-            className="font-extrabold text-white underline hover:text-[#FCD34D] cursor-pointer"
-          >
-            Log In
-          </button>
-        </div>
-      </div>
-
-      {/* ================= 3. FOOTER COPYRIGHT & STANDAR AKSESIBILITAS ================= */}
-      <div className="w-full max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row justify-between items-center text-[11px] text-white/85 font-medium gap-3 z-10">
-        <div>
-          Hearo AI © 2026 • Media Belajar Aksesibel Inklusif • Didukung
-          Pengenalan BISINDO & SPOK
-        </div>
-        <div className="flex items-center gap-3">
-
-          <span className="inline-flex items-center gap-1">
-            <Icon icon="lucide:languages" className="w-3.5 h-3.5" />
-            <span>Bahasa Isyarat Indonesia</span>
-          </span>
-        </div>
-      </div>
-
-      {/* ================= 4. POP-UP STATUS PENDAFTARAN ================= */}
-      {modalStatus && (
-        <div className="fixed inset-0 z-50 bg-[#0A2540]/55 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-7 text-center shadow-2xl relative animate-fadeIn">
+          {/* Logo Hearo Kiri Atas */}
+          <div className="relative z-10 shrink-0">
             <button
               type="button"
-              onClick={() => setModalStatus(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-              aria-label="Tutup pop-up"
+              onClick={onNavigateToLanding}
+              title="Kembali ke Beranda"
+              className="focus:outline-none hover:opacity-90 transition cursor-pointer inline-flex items-center"
             >
-              <Icon icon="lucide:x" className="w-5 h-5" />
+              <HearoLogo variant="transparent" />
             </button>
+          </div>
 
-            <>
-                {/* Ikon Sukses */}
-                <div className="relative w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-5 shadow-md">
-                  <Icon icon="lucide:check" className="w-8 h-8 stroke-[3]" />
-                  <span className="absolute -top-2 -left-2 text-[#FCD34D] text-sm font-black">
-                    ✦
-                  </span>
-                  <span className="absolute -bottom-1 -right-2 text-[#FCD34D] text-xs font-black">
-                    ★
-                  </span>
-                </div>
+          {/* Ilustrasi Karakter Dinamis */}
+          <div className="relative z-10 my-4 lg:my-2 flex-1 min-h-0 flex items-center justify-center">
+            <img
+              src={currentRole.illustration}
+              alt={currentRole.illustrationAlt}
+              className="max-h-[250px] sm:max-h-[300px] xl:max-h-[340px] w-auto max-w-full object-contain select-none transition-all duration-300"
+            />
+          </div>
 
-                <span className="inline-block bg-emerald-50 text-emerald-700 text-[11px] font-extrabold px-3 py-1 rounded-full mb-2">
-                  Akun {modalStatus.role} Terdaftar
-                </span>
-
-                <h2 className="text-2xl font-extrabold text-[#102A43]">
-                  Akun Berhasil Terdaftar
-                </h2>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  Email{' '}
-                  <strong className="text-[#102A43]">
-                    {modalStatus.email}
-                  </strong>
-                  {modalStatus.studentName ? (
-                    <>
-                      {' '}
-                      untuk pendampingan anak{' '}
-                      <strong className="text-[#102A43]">
-                        {modalStatus.studentName}
-                      </strong>
-                    </>
-                  ) : null}{' '}
-                  berhasil didaftarkan. Anda akan masuk otomatis ke akun.
-                  {selectedRole === 'ORANG TUA' && (
-                    <> Permintaan penghubungan anak menunggu persetujuan guru.</>
-                  )}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={handleProceedAfterSuccess}
-                  className="mt-6 w-full bg-[#102A43] hover:bg-[#0B1E30] text-white font-extrabold text-sm py-3.5 rounded-full shadow-md inline-flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <span>Masuk Sekarang</span>
-                  <Icon icon="lucide:arrow-right" className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setModalStatus(null)}
-                  className="mt-3 text-xs font-bold text-slate-500 hover:text-[#102A43] cursor-pointer"
-                >
-                  Tutup
-                </button>
-            </>
+          {/* Teks Ajakan Bawah Dinamis */}
+          <div className="relative z-10 shrink-0 text-center space-y-1.5 max-w-[430px] mx-auto">
+            <h2 className="text-xl sm:text-[26px] font-bold leading-snug tracking-tight text-white">
+              {currentRole.leftTitle}
+            </h2>
+            <p className="text-xs sm:text-[13px] text-white/90 font-normal leading-relaxed">
+              {currentRole.leftSubtitle}
+            </p>
           </div>
         </div>
-      )}
+
+        {/* ================= KOLOM KANAN: TAB ROLE & FORM REGISTER ================= */}
+        <div className="bg-white px-6 py-7 sm:px-12 md:px-14 lg:py-6 flex flex-col justify-center overflow-y-auto lg:overflow-visible">
+          <div className="w-full max-w-[440px] mx-auto">
+            {/* Role Switcher Pill Bar */}
+            <div className="bg-[#F4F8FF] p-1.5 rounded-full border border-[#E2ECFC] grid grid-cols-3 gap-1 mb-4">
+              {Object.values(ROLE_CONFIG).map((item) => {
+                const isActive = role === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleRoleChange(item.id)}
+                    className={`py-2 px-3 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      isActive
+                        ? 'bg-[#007EDA] text-white shadow-sm'
+                        : 'text-slate-600 hover:text-[#102A43]'
+                    }`}
+                  >
+                    <Icon icon={item.icon} className="w-3.5 h-3.5 shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Heading & Subheading Dinamis */}
+            <div className="text-center space-y-1 mb-4">
+              <h1 className="text-2xl sm:text-[26px] font-extrabold text-[#102A43] leading-tight tracking-tight">
+                {currentRole.formTitle}
+              </h1>
+              <p className="text-[11px] sm:text-xs text-slate-500 font-normal leading-relaxed">
+                {currentRole.formSubtitle}
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-2.5">
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="rounded-xl bg-red-50 border border-red-200 px-3.5 py-2 text-[11px] font-semibold text-red-700"
+                >
+                  {errorMessage}
+                </div>
+              )}
+
+              {/* 1. Nama Lengkap (Semua Role) */}
+              <div className="space-y-1">
+                <label
+                  htmlFor="reg-name"
+                  className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                >
+                  {currentRole.nameLabel}
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Icon icon="lucide:user" className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <input
+                    id="reg-name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={currentRole.namePlaceholder}
+                    className={inputBaseClass}
+                  />
+                </div>
+              </div>
+
+              {/* 2. Field Identitas Khusus Per Role */}
+              {role === 'siswa' && (
+                <div className="space-y-1">
+                  <label
+                    htmlFor="reg-nisn"
+                    className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                  >
+                    NISN
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:id-card"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
+                    <input
+                      id="reg-nisn"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={10}
+                      required
+                      value={nisn}
+                      onChange={(e) =>
+                        setNisn(e.target.value.replace(/\D/g, ''))
+                      }
+                      placeholder="10 digit NISN"
+                      className={inputBaseClass}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {role === 'guru' && (
+                <div className="space-y-1">
+                  <label
+                    htmlFor="reg-nip"
+                    className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                  >
+                    NIP / NUPTK
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:id-card"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
+                    <input
+                      id="reg-nip"
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      value={nip}
+                      onChange={(e) =>
+                        setNip(e.target.value.replace(/\D/g, ''))
+                      }
+                      placeholder="Nomor induk pegawai"
+                      className={inputBaseClass}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {role === 'orang_tua' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="reg-child-nisn"
+                      className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                    >
+                      NISN Anak
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Icon
+                          icon="lucide:id-card"
+                          className="w-4 h-4 text-slate-400"
+                        />
+                      </div>
+                      <input
+                        id="reg-child-nisn"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={10}
+                        required
+                        value={childNisn}
+                        onChange={(e) =>
+                          setChildNisn(e.target.value.replace(/\D/g, ''))
+                        }
+                        placeholder="10 digit NISN anak"
+                        className={inputBaseClass}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="reg-child-name"
+                      className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                    >
+                      Nama Anak
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Icon
+                          icon="lucide:user"
+                          className="w-4 h-4 text-slate-400"
+                        />
+                      </div>
+                      <input
+                        id="reg-child-name"
+                        type="text"
+                        required
+                        value={childName}
+                        onChange={(e) => setChildName(e.target.value)}
+                        placeholder="Nama lengkap anak"
+                        className={inputBaseClass}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Nomor WhatsApp */}
+              <div className="space-y-1">
+                <label
+                  htmlFor="reg-whatsapp"
+                  className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                >
+                  Nomor WhatsApp
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:phone"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
+                  <input
+                    id="reg-whatsapp"
+                    type="tel"
+                    required
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    placeholder="0812-xxxx-xxxx"
+                    className={inputBaseClass}
+                  />
+                </div>
+              </div>
+
+              {/* 4. Email */}
+              <div className="space-y-1">
+                <label
+                  htmlFor="reg-email"
+                  className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                >
+                  Email
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Icon
+                      icon="lucide:mail"
+                      className="w-4 h-4 text-slate-400"
+                    />
+                  </div>
+                  <input
+                    id="reg-email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={currentRole.emailPlaceholder}
+                    className={inputBaseClass}
+                  />
+                </div>
+              </div>
+
+              {/* 5. Kata Sandi & Konfirmasi Kata Sandi (2 Kolom) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label
+                    htmlFor="reg-password"
+                    className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                  >
+                    Kata Sandi
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:lock"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
+                    <input
+                      id="reg-password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Minimal 8 karakter"
+                      className={`${inputBaseClass} pr-9`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword
+                          ? 'Sembunyikan kata sandi'
+                          : 'Lihat kata sandi'
+                      }
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#102A43] cursor-pointer"
+                    >
+                      <Icon
+                        icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
+                        className="w-4 h-4"
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label
+                    htmlFor="reg-confirm-password"
+                    className="block text-[11px] sm:text-xs font-bold text-[#102A43]"
+                  >
+                    Konfirmasi Kata Sandi
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Icon
+                        icon="lucide:lock"
+                        className="w-4 h-4 text-slate-400"
+                      />
+                    </div>
+                    <input
+                      id="reg-confirm-password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Ulangi kata sandi"
+                      className={`${inputBaseClass} pr-9`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      aria-label={
+                        showConfirmPassword
+                          ? 'Sembunyikan konfirmasi sandi'
+                          : 'Lihat konfirmasi sandi'
+                      }
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-[#102A43] cursor-pointer"
+                    >
+                      <Icon
+                        icon={
+                          showConfirmPassword ? 'lucide:eye-off' : 'lucide:eye'
+                        }
+                        className="w-4 h-4"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 6. Checkbox Ketentuan Layanan */}
+              <div className="pt-1">
+                <label className="flex items-start gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5 w-3.5 h-3.5 rounded border-slate-300 text-[#007EDA] focus:ring-[#007EDA] cursor-pointer"
+                  />
+                  <span className="text-[11px] text-slate-500 leading-snug">
+                    Saya menyetujui{' '}
+                    <span className="font-bold text-[#007EDA] hover:underline">
+                      Ketentuan Layanan
+                    </span>{' '}
+                    dan{' '}
+                    <span className="font-bold text-[#007EDA] hover:underline">
+                      Kebijakan Privasi
+                    </span>{' '}
+                    Hearo AI.
+                  </span>
+                </label>
+              </div>
+
+              {/* 7. Tombol Daftar Sekarang */}
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3 bg-[#FCD34D] hover:bg-[#FBBF24] disabled:opacity-60 text-[#102A43] text-xs sm:text-sm font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer"
+                >
+                  <span>
+                    {isSubmitting ? 'Mendaftarkan...' : 'Daftar Sekarang'}
+                  </span>
+                  <Icon icon="lucide:arrow-right" className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
+
+            {/* Footer Link Log In */}
+            <div className="mt-3.5 text-center text-xs text-slate-500 font-medium">
+              <span>Sudah punya akun? </span>
+              <button
+                type="button"
+                onClick={onNavigateToLogin}
+                className="font-bold text-[#007EDA] hover:underline cursor-pointer"
+              >
+                Log in
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
